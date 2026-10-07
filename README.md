@@ -60,7 +60,7 @@ VSA CORE is currently in early development. Implemented foundations include a me
 
 See [Contributing](CONTRIBUTING.md) for local setup and validation.
 
-See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation, updater, and executable modules are not implemented.
+See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation execution, updater, and executable modules are not implemented. Experimental automation plans are inert SDK metadata only. See the [Ecosystem roadmap](docs/ECOSYSTEM_ROADMAP.md), [Module contract](docs/MODULE_CONTRACT.md), and [Local data design](docs/LOCAL_DATA_DESIGN.md) for review gates.
 
 ## License
 

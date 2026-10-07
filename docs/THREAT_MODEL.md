@@ -6,7 +6,7 @@ Current assets are local settings integrity, truthful registry metadata, UI trus
 
 | Threat | Current mitigation | Future work / current risk |
 | --- | --- | --- |
-| Malicious future module or compromised plugin | Metadata only; no download, load, or execution API | Execution isolation, signature verification, permission enforcement need separate review |
+| Malicious future module or compromised plugin | Bounded strict manifest admission; no grants/install claims in source manifests; no download, load, or execution API | Execution isolation, signature verification, permission enforcement need separate review |
 | Over-permissioned module | Typed declarations; missing and undeclared permissions denied by logical policy | No OS enforcement exists; future grants need scoped resources and explicit consent |
 | Compromised dependency / supply-chain attack | Lockfiles, existing CI/security checks; no bulk updates | Dependencies and build tools execute with developer privileges; review provenance and releases |
 | Secret leakage | Settings schema has no secret fields and rejects unknown fields; no secret features | Never introduce credentials into settings; future Vault requires independent architecture review |
@@ -33,3 +33,5 @@ Local diagnostics omits config/data locations from default IPC responses and all
 Review executable modules, updater, Vault, credentials, browser integrations, external command execution, cloud accounts, remote administration, and production signing independently before implementation. Logical permission metadata must not be presented as enforced isolation.
 
 See [Future boundaries](FUTURE_BOUNDARIES.md) for the review gates before adding those systems. Current settings files have no protection against a compromised local account; parent-directory symlinks and Windows reparse points are not comprehensively defended against.
+
+Automation plans are inert metadata with validated IDs and bounded intervals; they cannot be enabled, carry commands, or dispatch actions. Future action resolution and scheduling need separate review. The SDK is experimental source-level metadata, not a trusted executable plugin interface.

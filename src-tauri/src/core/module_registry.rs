@@ -1,6 +1,24 @@
 use crate::security::{Permission, PermissionDecision, PermissionPolicy};
 use serde::{Deserialize, Serialize};
 
+pub(crate) fn validate_identifier(id: &str) -> Result<(), &'static str> {
+    if id.trim().is_empty() {
+        return Err("Metadata ID must not be empty");
+    }
+    if !id
+        .bytes()
+        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+    {
+        return Err("Metadata ID must use lowercase ASCII letters, digits, or hyphens");
+    }
+    if id.len() > 64 || id.starts_with('-') || id.ends_with('-') {
+        return Err(
+            "Metadata ID must be at most 64 bytes and start and end with a letter or digit",
+        );
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ModuleLifecycle {
@@ -39,21 +57,7 @@ impl ModuleDescriptor {
         }
     }
     pub fn validate(&self) -> Result<(), &'static str> {
-        if self.id.trim().is_empty() {
-            return Err("Module ID must not be empty");
-        }
-        if !self
-            .id
-            .bytes()
-            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
-        {
-            return Err("Module ID must use lowercase ASCII letters, digits, or hyphens");
-        }
-        if self.id.len() > 64 || self.id.starts_with('-') || self.id.ends_with('-') {
-            return Err(
-                "Module ID must be at most 64 bytes and start and end with a letter or digit",
-            );
-        }
+        validate_identifier(&self.id)?;
         for (value, limit) in [
             (self.name.as_str(), 128),
             (self.description.as_str(), 2048),
