@@ -77,6 +77,29 @@ impl ModuleRegistry {
         if module.id.trim().is_empty() {
             return Err("Module ID must not be empty");
         }
+        if !module
+            .id
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+        {
+            return Err("Module ID must use lowercase ASCII letters, digits, or hyphens");
+        }
+        if module.name.trim().is_empty() {
+            return Err("Module name must not be empty");
+        }
+        match (module.lifecycle, module.version.as_deref()) {
+            (ModuleLifecycle::Planned, Some(_)) => {
+                return Err("Planned modules must not declare a version")
+            }
+            (
+                ModuleLifecycle::Available | ModuleLifecycle::Installed | ModuleLifecycle::Enabled,
+                None | Some(""),
+            ) => return Err("Available, installed, and enabled modules require a version"),
+            (_, Some(version)) if version.trim().is_empty() => {
+                return Err("Module version must not be blank")
+            }
+            _ => {}
+        }
         if self.modules.iter().any(|existing| existing.id == module.id) {
             return Err("Module ID already registered");
         }
@@ -158,6 +181,9 @@ mod tests {
         {
             let mut module = ModuleDescriptor::new(index.to_string(), "Test", "");
             module.lifecycle = state;
+            if state != ModuleLifecycle::Planned {
+                module.version = Some("1.0.0".into());
+            }
             assert_eq!(
                 serde_json::from_str::<ModuleLifecycle>(&serde_json::to_string(&state).unwrap())
                     .unwrap(),
@@ -206,5 +232,42 @@ mod tests {
                 "VSA R4R + SDA"
             ]
         );
+    }
+    #[test]
+    fn invalid_metadata_never_mutates_registry() {
+        let mut registry = ModuleRegistry::new();
+        for id in [
+            "UPPER",
+            " leading",
+            "trailing ",
+            "path/segment",
+            "non-ascii-é",
+        ] {
+            assert!(registry
+                .register(ModuleDescriptor::new(id, "Name", ""))
+                .is_err());
+        }
+        assert!(registry
+            .register(ModuleDescriptor::new("valid", " ", ""))
+            .is_err());
+        for state in [
+            ModuleLifecycle::Planned,
+            ModuleLifecycle::Available,
+            ModuleLifecycle::Installed,
+            ModuleLifecycle::Enabled,
+        ] {
+            let mut module = ModuleDescriptor::new("valid", "Name", "");
+            module.lifecycle = state;
+            module.version = if state == ModuleLifecycle::Planned {
+                Some("1.0.0".into())
+            } else {
+                None
+            };
+            assert!(registry.register(module.clone()).is_err());
+            module.version = Some("  ".into());
+            assert!(registry.register(module).is_err());
+        }
+        assert!(registry.modules().is_empty());
+        assert_eq!(registry.enabled_count(), 0);
     }
 }
