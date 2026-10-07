@@ -34,6 +34,6 @@ This is a single-process persistence foundation. Cross-process coordination and 
 
 ## Security configuration and unfinished systems
 
-The webview CSP limits scripts and content to local sources and connections to Tauri IPC. A separate development CSP permits inline Vite refresh/style injection and loopback HMR on port 1420; release policy does not. Remote TAURI_DEV_HOST development requires an explicit reviewed dev CSP adjustment. The main window capability has core defaults and no opener permission. Existing opener dependencies remain, but no opener command is authorized or used by the frontend.
+The webview CSP limits scripts and content to local sources and connections to Tauri IPC. A separate development CSP permits inline Vite refresh/style injection and loopback HMR on port 1420; release policy does not. Remote TAURI_DEV_HOST development requires an explicit reviewed dev CSP adjustment. The main window capability has core defaults and no opener permission. The unused opener plugin and its frontend/backend dependencies have been removed.
 
 Module download/execution, OS sandboxing, Vault, encryption, authentication, scheduler, automation, updater, code signing for production, installer releases, and cloud services are not implemented. Unit tests cover registry, lifecycle, settings/storage, policy, and diagnostics. CI builds the frontend and checks Rust formatting, compilation, Clippy, and tests on the existing Linux runner; native Windows verification remains necessary.

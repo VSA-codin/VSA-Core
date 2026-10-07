@@ -22,7 +22,6 @@ pub fn run() {
             )));
             Ok(())
         })
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_core_status,
             get_modules,
