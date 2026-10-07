@@ -39,11 +39,27 @@ VSA CORE currently uses:
 - Vite
 - pnpm
 
+## Foundation validation
+
+Use the committed lockfiles; avoid unrelated dependency upgrades. From the repository root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml
+git diff --check
+```
+
+CI runs these build and Rust checks on Linux and Windows. Storage tests use isolated temporary directories and must preserve corrupt originals and existing backups on failure. Keep IPC errors free of file contents and absolute paths. Native webview, keyboard, and minimum-window checks remain separate from compilation; see [Desktop readiness](docs/READINESS.md).
+
 ## Security vulnerabilities
 
 Do not report security vulnerabilities through public GitHub Issues.
 
-Use GitHub Private Vulnerability Reporting instead.
+Use the repository’s GitHub Private Vulnerability Reporting when available.
 
 See [SECURITY.md](SECURITY.md) for details.
 

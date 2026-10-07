@@ -29,7 +29,7 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 - Vite
 - pnpm
 
-## Planned VSA CORE systems
+## Roadmap beyond current foundations
 
 - Module system
 - Secure local vault
@@ -38,8 +38,8 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 - Notifications
 - Update system with rollback
 - Stable / Beta / Nightly channels
-- Trust Center
-- Diagnostics
+- Expanded Trust Center
+- Expanded diagnostics
 - Plugin SDK
 - Module Store
 - Network controls

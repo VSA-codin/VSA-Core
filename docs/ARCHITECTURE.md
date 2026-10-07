@@ -16,7 +16,7 @@ The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA AS
 
 ## Settings and storage
 
-`core/settings.rs` defines a strict serde settings schema, currently one boolean with a false default. Unknown fields are rejected. No passwords, credentials, cookies, keys, or telemetry preferences are stored.
+`core/settings.rs` defines a strict serde settings schema, currently one boolean with a false default. Only JSON objects are accepted; unknown and duplicate fields and nonboolean preference values are rejected. No passwords, credentials, cookies, keys, or telemetry preferences are stored.
 
 `commands/settings.rs` delegates to `services::SettingsService`, which delegates to `storage::SettingsStore`. Tauri resolves the application config directory at startup, without hardcoded user paths. Missing settings yield defaults without writing. Invalid JSON, oversized files, non-regular files, and symlinks are rejected and preserved. The frontend may use default layout if startup reading fails; Settings and Trust Center expose the storage error.
 

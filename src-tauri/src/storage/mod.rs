@@ -1,9 +1,22 @@
 use crate::core::settings::AppSettings;
 use std::{
-    fs::{self, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::PathBuf,
 };
+
+const MAX_SETTINGS_BYTES: u64 = 16 * 1024;
+
+fn create_private_file(path: &std::path::Path) -> std::io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options.open(path)
+}
 
 pub struct SettingsStore {
     directory: PathBuf,
@@ -15,28 +28,33 @@ impl SettingsStore {
     pub fn directory(&self) -> &std::path::Path {
         &self.directory
     }
-    pub fn load(&self) -> Result<AppSettings, &'static str> {
+    fn read_bytes(&self) -> Result<Option<Vec<u8>>, &'static str> {
         let path = self.directory.join("settings.json");
         match fs::symlink_metadata(&path) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                return Ok(AppSettings::default())
-            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err("Settings cannot be read"),
-            Ok(metadata) if !metadata.is_file() || metadata.len() > 16384 => {
+            Ok(metadata) if !metadata.is_file() || metadata.len() > MAX_SETTINGS_BYTES => {
                 return Err("Settings file is invalid")
             }
             Ok(_) => {}
         }
-        let file = fs::File::open(path).map_err(|_| "Settings cannot be read")?;
         let mut bytes = Vec::new();
-        file.take(16385)
+        File::open(path)
+            .map_err(|_| "Settings cannot be read")?
+            .take(MAX_SETTINGS_BYTES + 1)
             .read_to_end(&mut bytes)
             .map_err(|_| "Settings cannot be read")?;
-        if bytes.len() > 16384 {
+        if bytes.len() as u64 > MAX_SETTINGS_BYTES {
             return Err("Settings file is too large");
         }
-        serde_json::from_slice(&bytes)
-            .map_err(|_| "Settings JSON is invalid; existing file was preserved")
+        Ok(Some(bytes))
+    }
+    pub fn load(&self) -> Result<AppSettings, &'static str> {
+        match self.read_bytes()? {
+            None => Ok(AppSettings::default()),
+            Some(bytes) => serde_json::from_slice(&bytes)
+                .map_err(|_| "Settings JSON is invalid; existing file was preserved"),
+        }
     }
     pub fn save(&self, settings: &AppSettings) -> Result<(), &'static str> {
         // Ordinary saves never repair invalid settings.
@@ -47,18 +65,8 @@ impl SettingsStore {
         self.corrupted_bytes().is_ok()
     }
     fn corrupted_bytes(&self) -> Result<Vec<u8>, &'static str> {
-        let path = self.directory.join("settings.json");
-        let metadata = fs::symlink_metadata(&path).map_err(|_| "Settings recovery unavailable")?;
-        if !metadata.is_file() || metadata.len() > 16384 {
-            return Err("Settings recovery unavailable");
-        }
-        let mut bytes = Vec::new();
-        fs::File::open(path)
-            .map_err(|_| "Settings recovery unavailable")?
-            .take(16385)
-            .read_to_end(&mut bytes)
-            .map_err(|_| "Settings recovery unavailable")?;
-        if bytes.len() > 16384 || serde_json::from_slice::<AppSettings>(&bytes).is_ok() {
+        let bytes = self.read_bytes()?.ok_or("Settings recovery unavailable")?;
+        if serde_json::from_slice::<AppSettings>(&bytes).is_ok() {
             return Err("Settings recovery unavailable");
         }
         Ok(bytes)
@@ -67,15 +75,7 @@ impl SettingsStore {
         // Revalidate under the service lock; never infer corruption from a load error.
         let bytes = self.corrupted_bytes()?;
         let backup = self.directory.join("settings.json.corrupt.bak");
-        let mut options = OpenOptions::new();
-        options.write(true).create_new(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let mut file = options
-            .open(backup)
+        let mut file = create_private_file(&backup)
             .map_err(|_| "Recovery backup unavailable; existing files preserved")?;
         file.write_all(&bytes)
             .and_then(|_| file.sync_all())
@@ -90,15 +90,7 @@ impl SettingsStore {
         let bytes =
             serde_json::to_vec_pretty(settings).map_err(|_| "Settings cannot be encoded")?;
         let temporary = self.directory.join("settings.json.tmp");
-        let mut options = OpenOptions::new();
-        options.write(true).create_new(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let mut file = options
-            .open(&temporary)
+        let mut file = create_private_file(&temporary)
             .map_err(|_| "Settings temporary file unavailable; check for interrupted write")?;
         let result = (|| {
             file.write_all(&bytes)
@@ -271,5 +263,25 @@ mod tests {
             fs::read_to_string(fixture.0.join("settings.json.tmp")).unwrap(),
             "interrupted"
         );
+    }
+    #[cfg(unix)]
+    #[test]
+    fn recovery_backup_symlink_is_not_followed_and_files_are_private() {
+        use std::os::unix::{fs::symlink, fs::PermissionsExt};
+        let fixture = Fixture::new();
+        let path = fixture.0.join("settings.json");
+        let backup = fixture.0.join("settings.json.corrupt.bak");
+        let unrelated = fixture.0.join("untouched");
+        fs::write(&path, "broken").unwrap();
+        fs::write(&unrelated, "untouched").unwrap();
+        symlink(&unrelated, &backup).unwrap();
+        assert!(fixture.store().recover().is_err());
+        assert_eq!(fs::read_to_string(&unrelated).unwrap(), "untouched");
+        assert_eq!(fs::read_to_string(&path).unwrap(), "broken");
+        fs::remove_file(&backup).unwrap();
+        fixture.store().recover().unwrap();
+        for file in [path, backup] {
+            assert_eq!(fs::metadata(file).unwrap().permissions().mode() & 0o077, 0);
+        }
     }
 }
