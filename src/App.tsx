@@ -106,13 +106,13 @@ function App() {
                   automation and self-hosted services.
                 </p>
               </div>
-    
+
               <div className="hero-badge">
                 <span className="status-dot" />
                 {coreStatus?.privacy ?? "Local First"}
               </div>
             </section>
-    
+
             <section className="status-grid">
               <article className="status-card">
                 <span className="card-label">CORE STATUS</span>
@@ -125,46 +125,46 @@ function App() {
                       : "Connecting to the local VSA CORE backend."}
                 </p>
               </article>
-    
+
               <article className="status-card">
                 <span className="card-label">PRIVACY</span>
                 <strong>Local First</strong>
                 <p>No hidden telemetry. Your data stays local.</p>
               </article>
-    
+
               <article className="status-card">
                 <span className="card-label">MODULES</span>
                 <strong>{coreStatus ? `${coreStatus.enabledModules} / ${coreStatus.totalModules} enabled` : "Unavailable"}</strong>
                 <p>Roadmap metadata only; no module execution.</p>
               </article>
             </section>
-    
+
             <section className="panel">
               <div className="panel-heading">
                 <div>
                   <p className="eyebrow">SYSTEM</p>
                   <h3>VSA CORE foundation</h3>
                 </div>
-    
+
                 <span className="development-badge">Early Development</span>
               </div>
-    
+
               <div className="foundation-grid">
                 <div>
                   <span>Runtime</span>
                   <strong>{coreStatus?.runtime ?? "Tauri 2 + Rust"}</strong>
                 </div>
-    
+
                 <div>
                   <span>Interface</span>
                   <strong>React + TypeScript</strong>
                 </div>
-    
+
                 <div>
                   <span>Account</span>
                   <strong>Not required</strong>
                 </div>
-    
+
                 <div>
                   <span>Data mode</span>
                   <strong>{coreStatus?.privacy ?? "Local First"}</strong>
