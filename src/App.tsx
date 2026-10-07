@@ -1,4 +1,14 @@
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+
+type CoreStatus = {
+  name: string;
+  version: string;
+  runtime: string;
+  mode: string;
+  privacy: string;
+};
 
 const navigation = [
   "Dashboard",
@@ -10,6 +20,22 @@ const navigation = [
 ];
 
 function App() {
+  const [coreStatus, setCoreStatus] = useState<CoreStatus | null>(null);
+  const [coreError, setCoreError] = useState(false);
+
+  useEffect(() => {
+    invoke<CoreStatus>("get_core_status")
+      .then((status) => {
+        setCoreStatus(status);
+        setCoreError(false);
+      })
+      .catch(() => {
+        setCoreError(true);
+      });
+  }, []);
+
+  const isOnline = coreStatus !== null && !coreError;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -17,8 +43,10 @@ function App() {
           <div className="brand-mark">V</div>
 
           <div>
-            <div className="brand-name">VSA CORE</div>
-            <div className="brand-version">v0.1.0</div>
+            <div className="brand-name">{coreStatus?.name ?? "VSA CORE"}</div>
+            <div className="brand-version">
+              v{coreStatus?.version ?? "0.1.0"}
+            </div>
           </div>
         </div>
 
@@ -36,7 +64,7 @@ function App() {
 
         <div className="sidebar-footer">
           <span className="status-dot" />
-          Local mode
+          {coreStatus ? `${coreStatus.mode} mode` : "Connecting..."}
         </div>
       </aside>
 
@@ -49,14 +77,14 @@ function App() {
 
           <div className="core-status">
             <span className="status-dot" />
-            Core online
+            {coreError ? "Core unavailable" : isOnline ? "Core online" : "Connecting..."}
           </div>
         </header>
 
         <section className="hero-card">
           <div>
             <p className="eyebrow">WELCOME TO</p>
-            <h2>VSA CORE</h2>
+            <h2>{coreStatus?.name ?? "VSA CORE"}</h2>
             <p className="hero-copy">
               Privacy-first infrastructure for VSA applications, modules,
               automation and self-hosted services.
@@ -65,15 +93,21 @@ function App() {
 
           <div className="hero-badge">
             <span className="status-dot" />
-            Local First
+            {coreStatus?.privacy ?? "Local First"}
           </div>
         </section>
 
         <section className="status-grid">
           <article className="status-card">
             <span className="card-label">CORE STATUS</span>
-            <strong>Operational</strong>
-            <p>All local core services are available.</p>
+            <strong>{isOnline ? "Operational" : coreError ? "Unavailable" : "Starting"}</strong>
+            <p>
+              {isOnline
+                ? "All local core services are available."
+                : coreError
+                  ? "The local VSA CORE backend could not be reached."
+                  : "Connecting to the local VSA CORE backend."}
+            </p>
           </article>
 
           <article className="status-card">
@@ -102,7 +136,7 @@ function App() {
           <div className="foundation-grid">
             <div>
               <span>Runtime</span>
-              <strong>Tauri 2 + Rust</strong>
+              <strong>{coreStatus?.runtime ?? "Tauri 2 + Rust"}</strong>
             </div>
 
             <div>
@@ -117,7 +151,7 @@ function App() {
 
             <div>
               <span>Data mode</span>
-              <strong>Local first</strong>
+              <strong>{coreStatus?.privacy ?? "Local First"}</strong>
             </div>
           </div>
         </section>
