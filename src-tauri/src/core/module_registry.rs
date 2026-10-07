@@ -1,3 +1,4 @@
+use crate::security::{Permission, PermissionDecision, PermissionPolicy};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,6 +18,8 @@ pub struct ModuleDescriptor {
     pub version: Option<String>,
     pub description: String,
     pub lifecycle: ModuleLifecycle,
+    pub declared_permissions: Vec<Permission>,
+    pub permission_policy: PermissionPolicy,
 }
 
 impl ModuleDescriptor {
@@ -31,6 +34,8 @@ impl ModuleDescriptor {
             version: None,
             description: description.into(),
             lifecycle: ModuleLifecycle::Planned,
+            declared_permissions: Vec::new(),
+            permission_policy: PermissionPolicy::default(),
         }
     }
 }
@@ -80,6 +85,23 @@ impl ModuleRegistry {
     }
     pub fn modules(&self) -> &[ModuleDescriptor] {
         &self.modules
+    }
+    pub fn allowed_permission_count(&self) -> usize {
+        self.modules
+            .iter()
+            .map(|module| {
+                module
+                    .declared_permissions
+                    .iter()
+                    .filter(|permission| {
+                        module
+                            .permission_policy
+                            .decision(**permission, &module.declared_permissions)
+                            == PermissionDecision::Allow
+                    })
+                    .count()
+            })
+            .sum()
     }
     pub fn enabled_count(&self) -> usize {
         self.modules

@@ -1,0 +1,54 @@
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+
+type ModuleDescriptor = {
+  id: string;
+  name: string;
+  description: string;
+  version: string | null;
+  lifecycle: "planned" | "available" | "installed" | "enabled";
+  declaredPermissions: string[];
+  permissionPolicy: Record<string, "allow" | "deny">;
+};
+
+export function Modules() {
+  const [modules, setModules] = useState<ModuleDescriptor[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    invoke<ModuleDescriptor[]>("get_modules")
+      .then(setModules)
+      .catch(() => setError(true));
+  }, []);
+
+  return (
+    <section aria-label="Module registry">
+      <p>Roadmap metadata only. Installation and execution are not implemented yet.</p>
+      {error ? (
+        <p role="alert">Module registry unavailable.</p>
+      ) : modules === null ? (
+        <p role="status">Loading modules…</p>
+      ) : modules.map(module => (
+        <article className="panel" key={module.id}>
+          <h2>{module.name}</h2>
+          <p>{module.description}</p>
+          <p>
+            Status: {module.lifecycle} · Installed: {module.lifecycle === "installed" || module.lifecycle === "enabled" ? "Yes" : "No"}
+            {" · "}Enabled: {module.lifecycle === "enabled" ? "Yes" : "No"}
+          </p>
+          {module.version && <p>Version: {module.version}</p>}
+          <h3>Declared permissions</h3>
+          {module.declaredPermissions.length === 0 ? (
+            <p>None declared. Requirements for planned products are not specified yet. Missing permissions are denied.</p>
+          ) : (
+            <ul>
+              {module.declaredPermissions.map(permission => (
+                <li key={permission}>{permission}: {module.permissionPolicy[permission] ?? "deny"}</li>
+              ))}
+            </ul>
+          )}
+        </article>
+      ))}
+    </section>
+  );
+}

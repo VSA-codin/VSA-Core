@@ -26,7 +26,7 @@ body,
 
 body {
   min-height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 button {
@@ -339,7 +339,17 @@ h1 {
   }
 }
 
-body { overflow: auto; }
 button:focus-visible { outline: 2px solid #eeeeee; outline-offset: 3px; }
 .brand-version, .eyebrow, .card-label, .status-card p, .foundation-grid span, .sidebar-footer { color: #a0a0a0; }
 .main-content { overflow-wrap: anywhere; }
+
+.compact .main-content { padding: 18px; }
+.compact .panel, .compact .status-card { padding: 14px; }
+button { color: #eee; background: #181818; border: 1px solid #555; border-radius: 5px; padding: 8px 12px; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+input { accent-color: #aaa; }
+
+.diagnostics > div { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; gap: 16px; border-bottom: 1px solid #333; padding: 12px 0; }
+.diagnostics dt { color: #bbb; } .diagnostics dd { margin: 0; }
+input:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+@media (max-width: 650px) { .app-shell { grid-template-columns: 1fr; } .sidebar { min-height: auto; } .navigation { flex-direction: row; flex-wrap: wrap; } .nav-item { width: auto; } .hero-card { flex-direction: column; align-items: flex-start; } }
