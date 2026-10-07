@@ -27,7 +27,7 @@ export type ModuleDescriptor = {
 export type Diagnostics = {
   version: string; platform: string; architecture: string; runtime: string; buildMode: string;
   localFirst: boolean; telemetryImplemented: boolean; accountRequired: boolean;
-  configDirectory: string | null; dataDirectory: string | null; storageStatus: string; registryStatus: string;
+  configDirectory: string | null; dataDirectory: string | null; settingsLoadState: "missing" | "loaded" | "invalid" | "unavailable"; storageStatus: string; registryStatus: string;
   totalModules: number; enabledModules: number; allowedPermissions: number;
 };
 

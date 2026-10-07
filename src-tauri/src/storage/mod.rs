@@ -1,4 +1,4 @@
-use crate::core::settings::AppSettings;
+use crate::core::settings::{AppSettings, SettingsLoadState};
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
@@ -54,6 +54,17 @@ impl SettingsStore {
             None => Ok(AppSettings::default()),
             Some(bytes) => serde_json::from_slice(&bytes)
                 .map_err(|_| "Settings JSON is invalid; existing file was preserved"),
+        }
+    }
+    // Read-only observation, not a write-access probe or directory health claim.
+    pub fn load_state(&self) -> SettingsLoadState {
+        match self.read_bytes() {
+            Ok(None) => SettingsLoadState::Missing,
+            Ok(Some(bytes)) if serde_json::from_slice::<AppSettings>(&bytes).is_ok() => {
+                SettingsLoadState::Loaded
+            }
+            Ok(Some(_)) => SettingsLoadState::Invalid,
+            Err(_) => SettingsLoadState::Unavailable,
         }
     }
     pub fn save(&self, settings: &AppSettings) -> Result<(), &'static str> {
@@ -131,6 +142,33 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+    #[test]
+    fn read_only_health_distinguishes_missing_loaded_invalid_and_unavailable() {
+        let fixture = Fixture::new();
+        let store = fixture.store();
+        assert_eq!(store.load_state(), SettingsLoadState::Missing);
+        assert!(!fixture.0.join("settings.json").exists());
+        fs::write(fixture.0.join("settings.json"), "{}").unwrap();
+        assert_eq!(store.load_state(), SettingsLoadState::Loaded);
+        fs::write(fixture.0.join("settings.json"), "broken").unwrap();
+        assert_eq!(store.load_state(), SettingsLoadState::Invalid);
+        fs::remove_file(fixture.0.join("settings.json")).unwrap();
+        fs::create_dir(fixture.0.join("settings.json")).unwrap();
+        assert_eq!(store.load_state(), SettingsLoadState::Unavailable);
+        assert!(!fixture.0.join("settings.json.tmp").exists());
+        assert!(!fixture.0.join("settings.json.corrupt.bak").exists());
+    }
+    #[test]
+    fn unavailable_directory_does_not_create_or_replace_files() {
+        let fixture = Fixture::new();
+        let blocker = fixture.0.join("not-a-directory");
+        fs::write(&blocker, "preserved").unwrap();
+        let store = SettingsStore::new(blocker.clone());
+        assert!(store.load().is_err());
+        assert!(store.save(&AppSettings::default()).is_err());
+        assert!(store.recover().is_err());
+        assert_eq!(fs::read_to_string(blocker).unwrap(), "preserved");
     }
     #[test]
     fn missing_save_load_and_replace() {

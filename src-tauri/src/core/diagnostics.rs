@@ -1,3 +1,4 @@
+use crate::core::settings::SettingsLoadState;
 use crate::core::ModuleRegistry;
 use serde::Serialize;
 
@@ -14,6 +15,7 @@ pub struct Diagnostics {
     account_required: bool,
     config_directory: Option<String>,
     data_directory: Option<String>,
+    settings_load_state: SettingsLoadState,
     storage_status: &'static str,
     registry_status: &'static str,
     total_modules: usize,
@@ -25,7 +27,7 @@ impl Diagnostics {
         registry: &ModuleRegistry,
         config_directory: &std::path::Path,
         data_directory: &std::path::Path,
-        storage_readable: bool,
+        settings_load_state: SettingsLoadState,
         include_paths: bool,
     ) -> Self {
         Self {
@@ -44,10 +46,18 @@ impl Diagnostics {
             config_directory: include_paths
                 .then(|| config_directory.to_string_lossy().into_owned()),
             data_directory: include_paths.then(|| data_directory.to_string_lossy().into_owned()),
-            storage_status: if storage_readable {
-                "Readable (defaults if missing); write access not verified"
-            } else {
-                "Unavailable or invalid; existing configuration preserved"
+            settings_load_state,
+            storage_status: match settings_load_state {
+                SettingsLoadState::Missing => {
+                    "Settings missing; defaults in use; write access not verified"
+                }
+                SettingsLoadState::Loaded => {
+                    "Settings read successfully; write access not verified"
+                }
+                SettingsLoadState::Invalid => "Invalid settings; existing configuration preserved",
+                SettingsLoadState::Unavailable => {
+                    "Settings unavailable or unsafe; write access not verified"
+                }
             },
             registry_status: "Metadata registry available; execution not implemented",
             total_modules: registry.modules().len(),
@@ -63,13 +73,19 @@ mod tests {
     fn paths_require_explicit_opt_in_and_storage_errors_stay_generic() {
         let registry = ModuleRegistry::roadmap().unwrap();
         let path = std::path::Path::new("private-user-directory");
-        let value =
-            serde_json::to_value(Diagnostics::current(&registry, path, path, false, true)).unwrap();
+        let value = serde_json::to_value(Diagnostics::current(
+            &registry,
+            path,
+            path,
+            SettingsLoadState::Invalid,
+            true,
+        ))
+        .unwrap();
         assert_eq!(value["configDirectory"], "private-user-directory");
         assert_eq!(value["dataDirectory"], "private-user-directory");
         assert_eq!(
             value["storageStatus"],
-            "Unavailable or invalid; existing configuration preserved"
+            "Invalid settings; existing configuration preserved"
         );
     }
     #[test]
@@ -80,7 +96,7 @@ mod tests {
             &ModuleRegistry::roadmap().unwrap(),
             &directory,
             &directory,
-            true,
+            SettingsLoadState::Missing,
             false,
         );
         let value = serde_json::to_value(diagnostics).unwrap();

@@ -30,7 +30,7 @@ impl SettingsService {
             registry,
             self.store.directory(),
             data_directory,
-            self.get().is_ok(),
+            self.store.load_state(),
             include_paths,
         )
     }

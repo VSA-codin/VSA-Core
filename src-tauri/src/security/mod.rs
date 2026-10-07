@@ -26,9 +26,36 @@ pub enum PermissionDecision {
 }
 
 // Policy metadata only. No execution path or OS sandbox exists.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 #[serde(transparent)]
 pub struct PermissionPolicy(BTreeMap<Permission, PermissionDecision>);
+// Reject ambiguous duplicate decisions instead of accepting the last value.
+impl<'de> Deserialize<'de> for PermissionPolicy {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct PolicyVisitor;
+        impl<'de> serde::de::Visitor<'de> for PolicyVisitor {
+            type Value = PermissionPolicy;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a permission decision object with unique keys")
+            }
+            fn visit_map<M: serde::de::MapAccess<'de>>(
+                self,
+                mut map: M,
+            ) -> Result<Self::Value, M::Error> {
+                let mut decisions = BTreeMap::new();
+                while let Some((permission, decision)) =
+                    map.next_entry::<Permission, PermissionDecision>()?
+                {
+                    if decisions.insert(permission, decision).is_some() {
+                        return Err(serde::de::Error::custom("duplicate permission decision"));
+                    }
+                }
+                Ok(PermissionPolicy(decisions))
+            }
+        }
+        deserializer.deserialize_map(PolicyVisitor)
+    }
+}
 impl PermissionPolicy {
     pub fn decision(&self, permission: Permission, declared: &[Permission]) -> PermissionDecision {
         if !declared.contains(&permission) {
@@ -43,6 +70,52 @@ impl PermissionPolicy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn ambiguous_and_malformed_policy_is_rejected() {
+        for input in [
+            r#"{"network":"deny","network":"allow"}"#,
+            r#"{"network":"allow","network":"deny"}"#,
+            r#"{"unknown":"allow"}"#,
+            r#"{"network":true}"#,
+            r#"{"network":"unknown"}"#,
+            "[]",
+            "null",
+        ] {
+            assert!(
+                serde_json::from_str::<PermissionPolicy>(input).is_err(),
+                "{input}"
+            );
+        }
+    }
+    #[test]
+    fn every_permission_requires_declaration_and_explicit_allow() {
+        for permission in [
+            Permission::Network,
+            Permission::FilesystemRead,
+            Permission::FilesystemWrite,
+            Permission::ProcessExecute,
+            Permission::Notifications,
+            Permission::SecretsRead,
+            Permission::Clipboard,
+        ] {
+            assert_eq!(
+                PermissionPolicy::default().decision(permission, &[permission]),
+                PermissionDecision::Deny
+            );
+            let allowed =
+                PermissionPolicy(BTreeMap::from([(permission, PermissionDecision::Allow)]));
+            assert_eq!(allowed.decision(permission, &[]), PermissionDecision::Deny);
+            assert_eq!(
+                allowed.decision(permission, &[permission]),
+                PermissionDecision::Allow
+            );
+            let denied = PermissionPolicy(BTreeMap::from([(permission, PermissionDecision::Deny)]));
+            assert_eq!(
+                denied.decision(permission, &[permission]),
+                PermissionDecision::Deny
+            );
+        }
+    }
     #[test]
     fn default_unset_and_undeclared_permissions_are_denied() {
         let policy = PermissionPolicy::default();

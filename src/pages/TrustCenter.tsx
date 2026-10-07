@@ -40,7 +40,7 @@ export function TrustCenter() {
     ["Version", diagnostics.version], ["Runtime", diagnostics.runtime],
     ["Platform", `${diagnostics.platform} / ${diagnostics.architecture}`], ["Build", diagnostics.buildMode],
     ["Config directory", showPaths ? diagnostics.configDirectory ?? "Unavailable" : "Hidden for privacy"], ["Data directory (may not exist yet)", showPaths ? diagnostics.dataDirectory ?? "Unavailable" : "Hidden for privacy"],
-    ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
+    ["Settings load state", diagnostics.settingsLoadState], ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
     ["Enabled / total modules", `${diagnostics.enabledModules} / ${diagnostics.totalModules}`],
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
   ];
