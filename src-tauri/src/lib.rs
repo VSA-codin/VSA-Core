@@ -4,6 +4,13 @@ mod security;
 mod services;
 mod storage;
 
+/// Experimental metadata contracts; no module execution or stable binary ABI.
+pub mod sdk {
+    pub use crate::core::module_manifest::ModuleManifest;
+    pub use crate::core::module_registry::{ModuleDescriptor, ModuleLifecycle};
+    pub use crate::security::{Permission, PermissionDecision, PermissionPolicy};
+}
+
 use commands::{
     get_core_status, get_diagnostics, get_modules, get_settings, get_support_report,
     recover_settings, settings_recovery_available, update_settings,

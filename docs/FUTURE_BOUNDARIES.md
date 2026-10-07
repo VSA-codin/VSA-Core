@@ -6,7 +6,7 @@ These are review prerequisites, not implemented capabilities or a commitment to 
 
 Current permission policy is logical metadata. It **does not provide OS-level sandbox enforcement**. Declaring or allowing a permission does not isolate code, restrict the operating system, or authorize execution today.
 
-Before execution is introduced, review a bounded manifest schema, stable identity, publisher provenance, signed packages, hash verification, trust and revocation policy, installation integrity, updates, rollback/recovery, and platform-specific isolation. Hashes alone do not establish publisher authenticity. The existing descriptor is sufficient for the current metadata registry; it is not an executable package manifest.
+The bounded non-executable manifest v1 is implemented; see [Module contract](MODULE_CONTRACT.md). Before execution is introduced, review package manifest evolution, stable identity, publisher provenance, signed packages, hash verification, trust and revocation policy, installation integrity, updates, rollback/recovery, and platform-specific isolation. Hashes alone do not establish publisher authenticity. The current manifest admits metadata only; it is not an executable package manifest.
 
 Future enforcement points could include package admission, process creation, and a narrowly scoped broker for network, filesystem, secrets, clipboard, and notifications. Each operation would need to check both declarations and user grants, scope resources, deny missing or unknown permissions, and avoid ambient authority. In-process checks alone cannot constrain hostile native code. Windows and Linux isolation feasibility must be established before promising a sandbox or enabling execution.
 

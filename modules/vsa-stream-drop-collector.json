@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "vsa-stream-drop-collector",
+  "name": "VSA StreamDropCollector",
+  "description": "Planned stream drop tools.",
+  "version": null,
+  "lifecycle": "planned",
+  "declaredPermissions": []
+}

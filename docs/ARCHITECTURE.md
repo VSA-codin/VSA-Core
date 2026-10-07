@@ -10,9 +10,9 @@ Commands are `get_core_status`, `get_modules`, `get_settings`, `update_settings`
 
 ## Registry and lifecycle
 
-`core/module_registry.rs` stores descriptors in registration order, rejects blank, malformed, and duplicate IDs, blank names, and repeated permission declarations, and counts only Enabled entries. Lifecycle is a serialized enum: Planned, Available, Installed, Enabled. Enabled implies installed by its meaning; independent booleans cannot contradict one another. There is no transition or installation API yet. IDs use lowercase ASCII letters, digits, and hyphens. Planned entries must have no version; other lifecycle states require a nonblank version. Version strings are metadata, not validated release artifacts.
+`core/module_registry.rs` stores descriptors in registration order, rejects blank, malformed, and duplicate IDs, blank names, and repeated permission declarations, and counts only Enabled entries. Lifecycle is a serialized enum: Planned, Available, Installed, Enabled. Enabled implies installed by its meaning; independent booleans cannot contradict one another. There is no transition or installation API yet. IDs use 1–64 lowercase ASCII letters, digits, and hyphens, with a letter/digit at each end. Names, descriptions, and version metadata are bounded and reject control characters. Planned entries must have no version; other lifecycle states require a nonblank version. Version strings are metadata, not validated release artifacts.
 
-The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA ASF, VSA StreamDropCollector, and VSA R4R + SDA. All are Planned. No product features are implemented. Registry mutation is internal only; there is no registration IPC command.
+The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA ASF, VSA StreamDropCollector, and VSA R4R + SDA. All are Planned and parsed from bundled strict schema-v1 `modules/*.json` manifests at startup. Source manifests cannot declare local installation/activation or grants. The experimental Rust `sdk` exports metadata contracts only; see [Module contract](MODULE_CONTRACT.md). No product features are implemented. Registry mutation is internal only; there is no registration IPC command.
 
 ## Settings and storage
 

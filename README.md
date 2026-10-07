@@ -56,7 +56,7 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 
 ## Development status
 
-VSA CORE is currently in early development. Implemented foundations include a metadata-only module registry, working navigation, local compact-layout settings with explicit backup-preserving corruption recovery, deny-by-default permission metadata, and local Trust Center diagnostics with an opt-in sanitized support preview. Planned products cannot be installed or executed.
+VSA CORE is currently in early development. Implemented foundations include a metadata-only module registry with strict bundled manifests and an experimental Rust metadata SDK, working navigation, local compact-layout settings with explicit backup-preserving corruption recovery, deny-by-default permission metadata, and local Trust Center diagnostics with an opt-in sanitized support preview. Planned products cannot be installed or executed.
 
 See [Contributing](CONTRIBUTING.md) for local setup and validation.
 

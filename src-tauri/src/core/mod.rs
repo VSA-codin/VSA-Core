@@ -6,3 +6,5 @@ pub use status::CoreStatus;
 
 pub mod diagnostics;
 pub mod settings;
+
+pub mod module_manifest;

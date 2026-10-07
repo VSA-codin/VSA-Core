@@ -38,6 +38,54 @@ impl ModuleDescriptor {
             permission_policy: PermissionPolicy::default(),
         }
     }
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if self.id.trim().is_empty() {
+            return Err("Module ID must not be empty");
+        }
+        if !self
+            .id
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+        {
+            return Err("Module ID must use lowercase ASCII letters, digits, or hyphens");
+        }
+        if self.id.len() > 64 || self.id.starts_with('-') || self.id.ends_with('-') {
+            return Err(
+                "Module ID must be at most 64 bytes and start and end with a letter or digit",
+            );
+        }
+        for (value, limit) in [
+            (self.name.as_str(), 128),
+            (self.description.as_str(), 2048),
+            (self.version.as_deref().unwrap_or(""), 64),
+        ] {
+            if value.len() > limit || value.chars().any(char::is_control) {
+                return Err("Module metadata exceeds its limit or contains control characters");
+            }
+        }
+        if self.name.trim().is_empty() {
+            return Err("Module name must not be empty");
+        }
+        match (self.lifecycle, self.version.as_deref()) {
+            (ModuleLifecycle::Planned, Some(_)) => {
+                return Err("Planned modules must not declare a version")
+            }
+            (
+                ModuleLifecycle::Available | ModuleLifecycle::Installed | ModuleLifecycle::Enabled,
+                None | Some(""),
+            ) => return Err("Available, installed, and enabled modules require a version"),
+            (_, Some(version)) if version.trim().is_empty() => {
+                return Err("Module version must not be blank")
+            }
+            _ => {}
+        }
+        for (index, permission) in self.declared_permissions.iter().enumerate() {
+            if self.declared_permissions[..index].contains(permission) {
+                return Err("Module permission already declared");
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default)]
@@ -51,62 +99,22 @@ impl ModuleRegistry {
     }
     pub fn roadmap() -> Result<Self, &'static str> {
         let mut registry = Self::new();
-        for (id, name, description) in [
-            (
-                "steam-power-suite",
-                "Steam Power Suite",
-                "Planned Steam utilities.",
-            ),
-            ("vsa-asf", "VSA ASF", "Planned ASF integration."),
-            (
-                "vsa-stream-drop-collector",
-                "VSA StreamDropCollector",
-                "Planned stream drop tools.",
-            ),
-            (
-                "vsa-r4r-sda",
-                "VSA R4R + SDA",
-                "Planned R4R and SDA integration.",
-            ),
+        for bytes in [
+            include_bytes!("../../../modules/steam-power-suite.json").as_slice(),
+            include_bytes!("../../../modules/vsa-asf.json").as_slice(),
+            include_bytes!("../../../modules/vsa-stream-drop-collector.json").as_slice(),
+            include_bytes!("../../../modules/vsa-r4r-sda.json").as_slice(),
         ] {
-            registry.register(ModuleDescriptor::new(id, name, description))?;
+            registry.register(
+                super::module_manifest::ModuleManifest::parse(bytes)?.into_descriptor(),
+            )?;
         }
         Ok(registry)
     }
     pub fn register(&mut self, module: ModuleDescriptor) -> Result<(), &'static str> {
-        if module.id.trim().is_empty() {
-            return Err("Module ID must not be empty");
-        }
-        if !module
-            .id
-            .bytes()
-            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
-        {
-            return Err("Module ID must use lowercase ASCII letters, digits, or hyphens");
-        }
-        if module.name.trim().is_empty() {
-            return Err("Module name must not be empty");
-        }
-        match (module.lifecycle, module.version.as_deref()) {
-            (ModuleLifecycle::Planned, Some(_)) => {
-                return Err("Planned modules must not declare a version")
-            }
-            (
-                ModuleLifecycle::Available | ModuleLifecycle::Installed | ModuleLifecycle::Enabled,
-                None | Some(""),
-            ) => return Err("Available, installed, and enabled modules require a version"),
-            (_, Some(version)) if version.trim().is_empty() => {
-                return Err("Module version must not be blank")
-            }
-            _ => {}
-        }
+        module.validate()?;
         if self.modules.iter().any(|existing| existing.id == module.id) {
             return Err("Module ID already registered");
-        }
-        for (index, permission) in module.declared_permissions.iter().enumerate() {
-            if module.declared_permissions[..index].contains(permission) {
-                return Err("Module permission already declared");
-            }
         }
         self.modules.push(module);
         Ok(())
