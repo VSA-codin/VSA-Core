@@ -31,3 +31,5 @@ Local diagnostics omits config/data locations from default IPC responses and all
 ## Future review gates
 
 Review executable modules, updater, Vault, credentials, browser integrations, external command execution, cloud accounts, remote administration, and production signing independently before implementation. Logical permission metadata must not be presented as enforced isolation.
+
+See [Future boundaries](FUTURE_BOUNDARIES.md) for the review gates before adding those systems. Current settings files have no protection against a compromised local account; parent-directory symlinks and Windows reparse points are not comprehensively defended against.

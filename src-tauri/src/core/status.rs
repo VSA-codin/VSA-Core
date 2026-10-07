@@ -25,3 +25,19 @@ impl CoreStatus {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn frontend_package_version_matches_desktop_version_source() {
+        let package: serde_json::Value =
+            serde_json::from_str(include_str!("../../../package.json")).unwrap();
+        assert_eq!(package["version"], env!("CARGO_PKG_VERSION"));
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../../tauri.conf.json")).unwrap();
+        assert!(
+            config.get("version").is_none(),
+            "Tauri should inherit the Cargo version"
+        );
+    }
+}

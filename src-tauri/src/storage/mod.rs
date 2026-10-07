@@ -144,6 +144,52 @@ mod tests {
         }
     }
     #[test]
+    fn size_limit_accepts_bounded_valid_json_and_rejects_extra_byte_without_mutation() {
+        let fixture = Fixture::new();
+        let path = fixture.0.join("settings.json");
+        let mut bytes = b"{}".to_vec();
+        bytes.resize(MAX_SETTINGS_BYTES as usize, b' ');
+        fs::write(&path, &bytes).unwrap();
+        assert_eq!(fixture.store().load().unwrap(), AppSettings::default());
+        bytes.push(b' ');
+        fs::write(&path, &bytes).unwrap();
+        assert!(fixture.store().load().is_err());
+        assert!(!fixture.store().recovery_available());
+        assert!(fixture.store().save(&AppSettings::default()).is_err());
+        assert_eq!(fs::read(path).unwrap(), bytes);
+    }
+    #[test]
+    fn replacement_failure_cleans_owned_temporary_and_preserves_target() {
+        let fixture = Fixture::new();
+        let target = fixture.0.join("settings.json");
+        fs::create_dir(&target).unwrap();
+        fs::write(target.join("preserved"), "untouched").unwrap();
+        // Exercise replacement after writing/flushing a temporary file, without
+        // relying on platform-specific permissions or racing another process.
+        assert!(fixture.store().write(&AppSettings::default()).is_err());
+        assert_eq!(
+            fs::read_to_string(target.join("preserved")).unwrap(),
+            "untouched"
+        );
+        assert!(!fixture.0.join("settings.json.tmp").exists());
+    }
+    #[test]
+    fn backup_creation_failure_preserves_corruption_and_existing_directory() {
+        let fixture = Fixture::new();
+        let path = fixture.0.join("settings.json");
+        let backup = fixture.0.join("settings.json.corrupt.bak");
+        fs::write(&path, "broken").unwrap();
+        fs::create_dir(&backup).unwrap();
+        fs::write(backup.join("preserved"), "untouched").unwrap();
+        assert!(fixture.store().recover().is_err());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "broken");
+        assert_eq!(
+            fs::read_to_string(backup.join("preserved")).unwrap(),
+            "untouched"
+        );
+        assert!(!fixture.0.join("settings.json.tmp").exists());
+    }
+    #[test]
     fn read_only_health_distinguishes_missing_loaded_invalid_and_unavailable() {
         let fixture = Fixture::new();
         let store = fixture.store();
