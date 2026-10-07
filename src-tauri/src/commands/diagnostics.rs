@@ -19,5 +19,5 @@ pub fn get_diagnostics(
     let settings = settings
         .lock()
         .map_err(|_| "Settings service unavailable")?;
-    Ok(Diagnostics::current(&registry, &settings, &directory))
+    Ok(settings.diagnostics(&registry, &directory))
 }

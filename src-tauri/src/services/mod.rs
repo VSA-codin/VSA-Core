@@ -14,7 +14,16 @@ impl SettingsService {
         self.store.save(&settings)?;
         Ok(settings)
     }
-    pub fn directory(&self) -> &std::path::Path {
-        self.store.directory()
+    pub fn diagnostics(
+        &self,
+        registry: &crate::core::ModuleRegistry,
+        data_directory: &std::path::Path,
+    ) -> crate::core::diagnostics::Diagnostics {
+        crate::core::diagnostics::Diagnostics::current(
+            registry,
+            self.store.directory(),
+            data_directory,
+            self.get().is_ok(),
+        )
     }
 }

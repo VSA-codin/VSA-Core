@@ -1,4 +1,4 @@
-use crate::{core::ModuleRegistry, services::SettingsService};
+use crate::core::ModuleRegistry;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -23,8 +23,9 @@ pub struct Diagnostics {
 impl Diagnostics {
     pub fn current(
         registry: &ModuleRegistry,
-        settings: &SettingsService,
+        config_directory: &std::path::Path,
         data_directory: &std::path::Path,
+        storage_readable: bool,
     ) -> Self {
         Self {
             version: env!("CARGO_PKG_VERSION"),
@@ -39,9 +40,9 @@ impl Diagnostics {
             local_first: true,
             telemetry_implemented: false,
             account_required: false,
-            config_directory: settings.directory().to_string_lossy().into_owned(),
+            config_directory: config_directory.to_string_lossy().into_owned(),
             data_directory: data_directory.to_string_lossy().into_owned(),
-            storage_status: if settings.get().is_ok() {
+            storage_status: if storage_readable {
                 "Readable (defaults if missing); write access not verified"
             } else {
                 "Unavailable or invalid; existing configuration preserved"
@@ -60,9 +61,12 @@ mod tests {
     fn diagnostic_snapshot_is_limited_and_honest() {
         let directory =
             std::env::temp_dir().join(format!("vsa-diagnostics-missing-{}", std::process::id()));
-        let service = SettingsService::new(crate::storage::SettingsStore::new(directory.clone()));
-        let diagnostics =
-            Diagnostics::current(&ModuleRegistry::roadmap().unwrap(), &service, &directory);
+        let diagnostics = Diagnostics::current(
+            &ModuleRegistry::roadmap().unwrap(),
+            &directory,
+            &directory,
+            true,
+        );
         let value = serde_json::to_value(diagnostics).unwrap();
         assert_eq!(value["totalModules"], 4);
         assert_eq!(value["enabledModules"], 0);

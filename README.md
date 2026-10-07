@@ -56,7 +56,9 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 
 ## Development status
 
-VSA CORE is currently in early development.
+VSA CORE is currently in early development. Implemented foundations include a metadata-only module registry, working navigation, local compact-layout settings, deny-by-default permission metadata, and local Trust Center diagnostics. Planned products cannot be installed or executed.
+
+See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation, updater, and executable modules are not implemented.
 
 ## License
 

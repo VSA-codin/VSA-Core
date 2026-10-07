@@ -1,0 +1,39 @@
+# VSA CORE architecture
+
+VSA CORE is a GPL-3.0-only local desktop foundation using Tauri 2, Rust, React, and TypeScript. The current implementation contains no executable module system, account requirement, telemetry collection, or network service.
+
+## Frontend and IPC
+
+`src/App.tsx` owns simple in-memory navigation and the dashboard. `src/pages` contains Modules, Settings, and Trust Center. React uses Tauri invoke commands; it has no direct filesystem access. Automation and Vault are honest placeholders. Compact layout is the only saved preference and changes actual layout spacing. Each backend view has loading and error states. Browser-only previews cannot reach Rust and show unavailable states.
+
+Commands are `get_core_status`, `get_modules`, `get_settings`, `update_settings`, and `get_diagnostics`. The Rust command layer maps lock and storage failures to safe messages without underlying OS errors or paths. Diagnostics deliberately exposes application locations only in its local view. Managed registry and settings state use separate mutexes; diagnostics locks registry then settings. No code takes the reverse order. Poisoned locks return errors; they are not silently recovered.
+
+## Registry and lifecycle
+
+`core/module_registry.rs` stores descriptors in registration order, rejects blank and duplicate IDs, and counts only Enabled entries. Lifecycle is a serialized enum: Planned, Available, Installed, Enabled. Enabled implies installed by its meaning; independent booleans cannot contradict one another. There is no transition or installation API yet. Versions are optional; planned entries have none.
+
+The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA ASF, VSA StreamDropCollector, and VSA R4R + SDA. All are Planned. No product features are implemented. Registry mutation is internal only; there is no registration IPC command.
+
+## Settings and storage
+
+`core/settings.rs` defines a strict serde settings schema, currently one boolean with a false default. Unknown fields are rejected. No passwords, credentials, cookies, keys, or telemetry preferences are stored.
+
+`commands/settings.rs` delegates to `services::SettingsService`, which delegates to `storage::SettingsStore`. Tauri resolves the application config directory at startup, without hardcoded user paths. Missing settings yield defaults without writing. Invalid JSON, oversized files, non-regular files, and symlinks are rejected and preserved. The frontend may use default layout if startup reading fails; Settings and Trust Center expose the storage error.
+
+Writes are serialized by the service mutex, encode to a same-directory temporary file opened with create_new, sync the file, close it, then rename over settings.json. Unix temporary files use mode 0600. Existing temporary files are never overwritten; an interrupted write requires manual review and recovery. Failed writes leave the prior target intact under normal filesystem semantics. No automatic corruption repair is attempted.
+
+This is a single-process persistence foundation. Cross-process coordination and hostile same-user filesystem races are not solved. Atomic rename is filesystem-dependent; parent-directory power-loss durability is not guaranteed. Windows ACLs are inherited from the application directory. Application data location is reported separately and need not exist yet.
+
+## Permission policy
+
+`security` provides typed permission categories and Allow/Deny decisions. Policies are serialized maps. Evaluation denies undeclared permissions and missing decisions, even if an undeclared permission has an Allow entry. Planned descriptors declare no permissions because their requirements have not been reviewed. There are no permission grants exposed in UI or IPC. This is logical metadata, not an operating-system sandbox or enforced execution boundary.
+
+## Diagnostics
+
+`SettingsService` reads storage availability and constructs the `core/diagnostics.rs` snapshot without putting filesystem access in the domain model. The narrow snapshot contains: version, OS, architecture, runtime, build mode, local-first/account/telemetry facts, application locations, storage readability, registry status/counts, and allowed declared permission count. No environment dump, personal-file enumeration, logger, export, network sink, or support bundle exists. Storage readability does not claim successful writes. Paths can identify a local user and should be reviewed before sharing screenshots.
+
+## Security configuration and unfinished systems
+
+The webview CSP limits scripts and content to local sources and connections to Tauri IPC. A separate development CSP permits inline Vite refresh/style injection and loopback HMR on port 1420; release policy does not. Remote TAURI_DEV_HOST development requires an explicit reviewed dev CSP adjustment. The main window capability has core defaults and no opener permission. Existing opener dependencies remain, but no opener command is authorized or used by the frontend.
+
+Module download/execution, OS sandboxing, Vault, encryption, authentication, scheduler, automation, updater, code signing for production, installer releases, and cloud services are not implemented. Unit tests cover registry, lifecycle, settings/storage, policy, and diagnostics. CI builds the frontend and checks Rust formatting, compilation, Clippy, and tests on the existing Linux runner; native Windows verification remains necessary.
