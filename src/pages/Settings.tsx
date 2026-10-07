@@ -40,17 +40,33 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
       {!settings && !error && <p role="status">Loading settings…</p>}
       {settings && (
         <>
-          <label>
-            <input
-              type="checkbox"
-              checked={settings.compactLayout}
-              disabled={saving}
-              onChange={event => {
-                setSettings({ compactLayout: event.target.checked });
-                setSaved(false);
-              }}
-            />
-            Compact layout
+          <label className={`setting-toggle ${saving ? "disabled" : ""}`}>
+            <span className="setting-toggle-copy">
+              <strong>Compact layout</strong>
+              <small>Use tighter spacing across the VSA CORE interface.</small>
+            </span>
+
+            <span className="setting-toggle-action">
+              <span className="setting-state">
+                {settings.compactLayout ? "On" : "Off"}
+              </span>
+
+              <input
+                className="switch-input"
+                type="checkbox"
+                checked={settings.compactLayout}
+                disabled={saving}
+                aria-label="Compact layout"
+                onChange={event => {
+                  setSettings({ compactLayout: event.target.checked });
+                  setSaved(false);
+                }}
+              />
+
+              <span className="switch-track" aria-hidden="true">
+                <span className="switch-thumb" />
+              </span>
+            </span>
           </label>
           <p>
             <button type="button" disabled={saving} onClick={save}>
