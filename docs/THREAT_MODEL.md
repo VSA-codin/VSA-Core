@@ -24,9 +24,9 @@ Current assets are local settings integrity, truthful registry metadata, UI trus
 
 The known moderate glib 0.18.x alert in the GTK/WebKit/Tauri Linux stack is an upstream stack issue. No unsupported overrides or alert suppression are introduced. Monitor supported upstream fixes; this document does not assert the alert is harmless.
 
-Linux automated tests do not establish Windows runtime behavior. Native Windows testing, especially rename replacement and inherited directory permissions, is required before release. No reproducible release, production signing, or installer pipeline is claimed.
+Linux and Windows automated compilation and storage tests do not establish native webview behavior. Native Windows testing, especially rename replacement and inherited directory permissions, is required before release. No reproducible release, production signing, or installer pipeline is claimed.
 
-Local diagnostics hides config/data locations by default and allows explicit local reveal. It never enumerates unrelated files or full environment values. There is no export or transmission mechanism. Users should review paths before sharing screenshots.
+Local diagnostics omits config/data locations from default IPC responses and allows explicit local reveal. It never enumerates unrelated files or full environment values. There is no export or transmission mechanism. Users should review paths before sharing screenshots.
 
 ## Future review gates
 

@@ -509,3 +509,21 @@ input:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Keep keyboard navigation and content usable at the native minimum size. */
+.skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; padding: 12px; color: #fff; background: #181818; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); outline: 2px solid #fff; }
+.sidebar { overflow-y: auto; }
+.main-content:focus-visible { outline: 2px solid #eee; outline-offset: -3px; }
+@media (min-width: 901px) and (max-width: 1100px) {
+  .foundation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .foundation-grid > div:nth-child(2) { border-right: 0; }
+  .hero-card { flex-wrap: wrap; }
+}
+@media (forced-colors: active) {
+  .switch-track { border-color: ButtonText; }
+  .switch-thumb { background: ButtonText; }
+  .switch-input:checked + .switch-track { border-color: Highlight; }
+  .switch-input:checked + .switch-track .switch-thumb { background: Highlight; }
+  .nav-item.active { border-color: Highlight; }
+}

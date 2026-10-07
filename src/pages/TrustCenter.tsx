@@ -4,18 +4,38 @@ import { invoke } from "@tauri-apps/api/core";
 type Diagnostics = {
   version: string; platform: string; architecture: string; runtime: string; buildMode: string;
   localFirst: boolean; telemetryImplemented: boolean; accountRequired: boolean;
-  configDirectory: string; dataDirectory: string; storageStatus: string; registryStatus: string;
+  configDirectory: string | null; dataDirectory: string | null; storageStatus: string; registryStatus: string;
   totalModules: number; enabledModules: number; allowedPermissions: number;
 };
 export function TrustCenter() {
   const [showPaths, setShowPaths] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const [pathsLoading, setPathsLoading] = useState(false);
+  const [pathsError, setPathsError] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
     invoke<Diagnostics>("get_diagnostics")
       .then(setDiagnostics)
       .catch(() => setError(true));
   }, []);
+
+  async function togglePaths() {
+    setPathsError(false);
+    if (showPaths) {
+      setShowPaths(false);
+      setDiagnostics(value => value && ({ ...value, configDirectory: null, dataDirectory: null }));
+      return;
+    }
+    setPathsLoading(true);
+    try {
+      setDiagnostics(await invoke<Diagnostics>("get_diagnostics", { includePaths: true }));
+      setShowPaths(true);
+    } catch {
+      setPathsError(true);
+    } finally {
+      setPathsLoading(false);
+    }
+  }
 
   if (error) return <p role="alert">Local diagnostics unavailable.</p>;
   if (!diagnostics) return <p role="status">Loading local diagnostics…</p>;
@@ -25,7 +45,7 @@ export function TrustCenter() {
     ["Account required", diagnostics.accountRequired ? "Yes" : "No"],
     ["Version", diagnostics.version], ["Runtime", diagnostics.runtime],
     ["Platform", `${diagnostics.platform} / ${diagnostics.architecture}`], ["Build", diagnostics.buildMode],
-    ["Config directory", showPaths ? diagnostics.configDirectory : "Hidden for privacy"], ["Data directory (may not exist yet)", showPaths ? diagnostics.dataDirectory : "Hidden for privacy"],
+    ["Config directory", showPaths ? diagnostics.configDirectory ?? "Unavailable" : "Hidden for privacy"], ["Data directory (may not exist yet)", showPaths ? diagnostics.dataDirectory ?? "Unavailable" : "Hidden for privacy"],
     ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
     ["Enabled / total modules", `${diagnostics.enabledModules} / ${diagnostics.totalModules}`],
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
@@ -34,9 +54,10 @@ export function TrustCenter() {
     <section className="panel">
       <h2>Local diagnostics</h2>
       <p>This information stays in this view. Directory paths can identify your local user; review before sharing a screenshot.</p>
-      <button type="button" aria-pressed={showPaths} onClick={() => setShowPaths(value => !value)}>
-        {showPaths ? "Hide local paths" : "Show local paths"}
+      <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
+        {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
       </button>
+      {pathsError && <p role="alert">Local paths could not be loaded. They remain hidden.</p>}
       <dl className="diagnostics">
         {rows.map(([label, value]) => (
           <div key={label}>

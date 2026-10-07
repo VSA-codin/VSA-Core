@@ -18,12 +18,14 @@ impl SettingsService {
         &self,
         registry: &crate::core::ModuleRegistry,
         data_directory: &std::path::Path,
+        include_paths: bool,
     ) -> crate::core::diagnostics::Diagnostics {
         crate::core::diagnostics::Diagnostics::current(
             registry,
             self.store.directory(),
             data_directory,
             self.get().is_ok(),
+            include_paths,
         )
     }
 }

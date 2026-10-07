@@ -54,6 +54,7 @@ function App() {
 
   return (
     <div className={`app-shell ${settings.compactLayout ? "compact" : ""}`}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">V</div>
@@ -86,11 +87,11 @@ function App() {
         </div>
       </aside>
 
-      <main className="main-content" ref={contentRef}>
+      <main id="main-content" className="main-content" ref={contentRef} tabIndex={-1} aria-labelledby="page-title">
         <header className="topbar">
           <div>
             <p className="eyebrow">VSA SOFTWARE ECOSYSTEM</p>
-            <h1>{page}</h1>
+            <h1 id="page-title">{page}</h1>
           </div>
 
           <div className="core-status">

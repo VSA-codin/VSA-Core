@@ -8,6 +8,7 @@ use tauri::{Manager, State};
 #[tauri::command]
 pub fn get_diagnostics(
     app: tauri::AppHandle,
+    include_paths: Option<bool>,
     registry: State<'_, Mutex<ModuleRegistry>>,
     settings: State<'_, Mutex<SettingsService>>,
 ) -> Result<Diagnostics, String> {
@@ -19,5 +20,5 @@ pub fn get_diagnostics(
     let settings = settings
         .lock()
         .map_err(|_| "Settings service unavailable")?;
-    Ok(settings.diagnostics(&registry, &directory))
+    Ok(settings.diagnostics(&registry, &directory, include_paths.unwrap_or(false)))
 }
