@@ -6,6 +6,8 @@ import { Dashboard } from "./pages/Dashboard";
 import { Modules } from "./pages/Modules";
 import { TrustCenter } from "./pages/TrustCenter";
 import { Settings } from "./pages/Settings";
+import { NavIcon } from "./components/NavIcon";
+import { SupportReport } from "./pages/SupportReport";
 import type { AppSettings } from "./services/api";
 
 const navigation = [
@@ -15,6 +17,7 @@ const navigation = [
   "Vault",
   "Trust Center",
   "Settings",
+  "Support Report",
 ] as const;
 type Page = typeof navigation[number];
 
@@ -67,7 +70,7 @@ function App() {
               key={item}
               type="button"
             >
-              {item}
+              <NavIcon name={item} /><span>{item}</span>
             </button>
           ))}
         </nav>
@@ -81,7 +84,7 @@ function App() {
       <main id="main-content" className="main-content" ref={contentRef} tabIndex={-1} aria-labelledby="page-title">
         <header className="topbar">
           <div>
-            <p className="eyebrow">VSA SOFTWARE ECOSYSTEM</p>
+            <p className="eyebrow">LOCAL WORKSPACE</p>
             <h1 id="page-title">{page}</h1>
           </div>
 
@@ -97,14 +100,24 @@ function App() {
         {page === "Modules" && <Modules />}
         {page === "Trust Center" && <TrustCenter />}
         {["Automation", "Vault"].includes(page) && (
-          <section className="panel">
-            <h2>{page}</h2>
-            <p>Not implemented yet.</p>
+          <section className="panel boundary-panel">
+            <div className="panel-heading"><h2>{page === "Automation" ? "Local workflows" : "Secret storage"}</h2><span className="development-badge">Not implemented</span></div>
             <p>{page === "Automation"
               ? "Future local workflows and scheduling will require explicit permissions. No automation runs today."
               : "Future secret storage requires a separately reviewed protection and recovery design. No secrets are stored or protected by this application today."}</p>
+            <h3>{page === "Automation" ? "Metadata foundation" : "Design boundary"}</h3>
+            {page === "Automation" ? <ul>
+              <li>Validated manual and interval trigger contracts.</li>
+              <li>Plans are disabled metadata in the experimental SDK.</li>
+              <li>No timers, background jobs or action execution.</li>
+            </ul> : <ul>
+              <li>OS keychain and audited encryption require review.</li>
+              <li>Lock, unlock, recovery and backup behavior remain undecided.</li>
+              <li>Do not enter passwords, tokens or private keys into CORE.</li>
+            </ul>}
           </section>
         )}
+        {page === "Support Report" && <SupportReport />}
         {page === "Settings" && <Settings onBusyChange={setSettingsBusy} onChange={value => { ++settingsRevision.current; setSettings(value); setSettingsError(false); }} />}
       </main>
     </div>

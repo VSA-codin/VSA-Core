@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalResource } from "../hooks/useLocalResource";
-import { SupportReport } from "./SupportReport";
 import { api, type Diagnostics } from "../services/api";
 
 export function TrustCenter() {
@@ -37,40 +36,46 @@ export function TrustCenter() {
   const diagnostics = revealed ?? snapshot;
   if (!diagnostics) return <p role="status">Loading local diagnostics…</p>;
   const rows: [string, string][] = [
-    ["Local first", diagnostics.localFirst ? "Implemented: local IPC and settings" : "Unavailable"],
+    ["Local First", diagnostics.localFirst ? "Implemented: local IPC and settings" : "Unavailable"],
     ["Telemetry collection", diagnostics.telemetryImplemented ? "Implemented" : "Not implemented; no collection"],
     ["Account required", diagnostics.accountRequired ? "Yes" : "No"],
     ["Version", diagnostics.version], ["Runtime", diagnostics.runtime],
     ["Platform", `${diagnostics.platform} / ${diagnostics.architecture}`], ["Build", diagnostics.buildMode],
     ["Config directory", showPaths ? diagnostics.configDirectory ?? "Unavailable" : "Hidden for privacy"], ["Data directory (may not exist yet)", showPaths ? diagnostics.dataDirectory ?? "Unavailable" : "Hidden for privacy"],
-    ["Settings load state", diagnostics.settingsLoadState], ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
+    ["Settings load state", ({ missing: "Missing · defaults in use", loaded: "Loaded", invalid: "Invalid · original preserved", unavailable: "Unavailable or unsafe" } as const)[diagnostics.settingsLoadState]], ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
     ["Enabled / total modules", `${diagnostics.enabledModules} / ${diagnostics.totalModules}`],
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
   ];
   return (
-    <section className="panel">
+    <section aria-label="Trust Center">
+      <p className="page-intro">A factual view of this foundation: what exists, what the local core reports, and where its boundaries end.</p>
       <h2>Implemented</h2>
-      <h3>Local diagnostics</h3>
-      <p>Diagnostics are generated locally. Directory paths can identify your local user; review before sharing a screenshot.</p>
-      <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
-        {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
-      </button>
-      {pathsError && <p role="alert">Local paths could not be loaded. They remain hidden.</p>}
-      <dl className="diagnostics">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <SupportReport />
-      <h3>Permission foundation</h3>
-      <p>Implemented: declared permission metadata and deny by default policy. No grants or module execution are exposed. This logical policy model is not an OS sandbox.</p>
-      <h2>Not implemented yet</h2>
-      <p>OS sandbox, Vault, encryption, updater, module installation, execution isolation, and log collection.</p>
-      <h2>Current limitations</h2>
-      <p>Permission decisions describe metadata only; no module execution exists to enforce them. Storage readability does not verify write access. Local paths can identify users when revealed. Same-user filesystem races and cross-process settings coordination are not prevented.</p>
+      <div className="trust-facts">
+        <div><strong>Local First</strong><p>Bundled interface and local settings. No account required.</p></div>
+        <div><strong>No telemetry</strong><p>No analytics, tracking, advertising or report uploads.</p></div>
+        <div><strong>Default deny policy</strong><p>Declared permission metadata; no module execution or OS sandbox.</p></div>
+      </div>
+      <section className="trust-section" aria-labelledby="diagnostics-title">
+        <div className="panel-heading"><h2 id="diagnostics-title">Current status</h2><span className="development-badge">Local diagnostics</span></div>
+        <p>Paths are hidden by default. Revealed paths may identify your user in screenshots; Support Report always excludes them.</p>
+        <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
+          {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
+        </button>
+        {pathsError && <p role="alert">Local paths could not be loaded. They remain hidden.</p>}
+        <dl className="diagnostics">
+          {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
+      </section>
+      <section className="trust-section" aria-labelledby="not-implemented-title">
+        <h2 id="not-implemented-title">Not implemented</h2>
+        <p>Vault, encryption, OS sandboxing, module installation and execution, automation execution, updater and log collection.</p>
+      </section>
+      <section className="trust-section" aria-labelledby="limitations-title">
+        <h2 id="limitations-title">Known limitations</h2>
+        <p>Permission decisions are logical metadata. They do not isolate code or restrict operating system access.</p>
+        <p>Settings storage does not prevent attacks by processes running as the same user. Filesystem checks do not eliminate races, parent-directory links or every Windows reparse point. Concurrent app processes are not coordinated.</p>
+        <p>Readability does not verify write access. File replacement does not guarantee recovery from a crash or power loss.</p>
+      </section>
     </section>
   );
 }

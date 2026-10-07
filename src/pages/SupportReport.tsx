@@ -24,9 +24,9 @@ export function SupportReport() {
   }
 
   return (
-    <section aria-labelledby="support-report-title">
-      <h3 id="support-report-title">Local support report preview</h3>
-      <p>Includes version, platform, architecture, runtime, build mode, local-first/account/telemetry facts, settings read status, module counts, and permission limitations. Paths and file contents are excluded, even when paths are revealed above. Nothing is uploaded or saved automatically.</p>
+    <section className="panel" aria-labelledby="support-report-title">
+      <div className="panel-heading"><h2 id="support-report-title">Support Report</h2><span className="development-badge">Local only</span></div>
+      <p>Includes version, platform, architecture, runtime, build mode, local-first/account/telemetry facts, settings read status, module counts, and permission limitations. Paths and file contents are excluded, even when paths are revealed in Trust Center. Nothing is uploaded or saved automatically.</p>
       <button type="button" disabled={loading} onClick={() => void preview()}>
         {loading ? "Preparing report…" : report ? "Refresh report preview" : "Preview sanitized report"}
       </button>

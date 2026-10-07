@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { useLocalResource } from "../hooks/useLocalResource";
-import { api, moduleLifecycles, type ModuleLifecycle } from "../services/api";
+import { api, type Permission } from "../services/api";
+import { LifecycleFilter, lifecycleLabels, type LifecycleSelection } from "../components/LifecycleFilter";
+
+const permissionLabels: Record<Permission, string> = {
+  network: "Network access", "filesystem.read": "Read files", "filesystem.write": "Write files",
+  "process.execute": "Run processes", notifications: "Notifications", "secrets.read": "Read secrets", clipboard: "Clipboard access",
+};
 
 export function Modules() {
   const [query, setQuery] = useState("");
-  const [lifecycle, setLifecycle] = useState<ModuleLifecycle | "all">("all");
+  const [lifecycle, setLifecycle] = useState<LifecycleSelection>("all");
   const { data: modules, error, reload } = useLocalResource(api.getModules);
-
   const normalized = query.trim().toLowerCase();
   const visibleModules = (modules ?? []).filter(module =>
     (lifecycle === "all" || module.lifecycle === lifecycle) &&
@@ -15,54 +20,46 @@ export function Modules() {
 
   return (
     <section aria-label="Module registry">
-      <p>Roadmap metadata only. Installation and execution are not implemented yet.</p>
-      <p>Permissions are a logical policy model, not an OS sandbox. Missing or undeclared permissions are denied.</p>
-      {modules !== null && !error && (
-        <>
-          <div className="module-filters">
-            <label htmlFor="module-search">Find modules
-              <input id="module-search" type="search" maxLength={128} value={query} onChange={event => setQuery(event.target.value)} placeholder="Name, ID, or description" />
-            </label>
-            <label htmlFor="module-lifecycle">Lifecycle
-              <select id="module-lifecycle" value={lifecycle} onChange={event => setLifecycle(moduleLifecycles.find(value => value === event.target.value) ?? "all")}>
-                <option value="all">All lifecycles</option>
-                {moduleLifecycles.map(value => <option key={value} value={value}>{value}</option>)}
-              </select>
-            </label>
-            <button type="button" disabled={!query && lifecycle === "all"} onClick={() => { setQuery(""); setLifecycle("all"); }}>Clear filters</button>
-          </div>
-          <p role="status">Showing {visibleModules.length} of {modules.length} modules.</p>
-        </>
-      )}
-      {error ? (
-        <div><p role="alert">Module registry unavailable.</p><button type="button" onClick={() => void reload()}>Retry modules</button></div>
-      ) : modules === null ? (
-        <p role="status">Loading modules…</p>
-      ) : modules.length === 0 ? <p>No modules registered.</p> : visibleModules.length === 0 ? <p>No modules match these filters. Clear filters to see the registry.</p> : visibleModules.map(module => (
-        <article className="panel module-card" key={module.id}>
-          <div className="module-heading"><h2>{module.name}</h2><span className="development-badge">{module.lifecycle}</span></div>
-          <p>{module.description}</p>
-          <details>
-            <summary>Lifecycle and permissions</summary>
-            <p>
-              Status: {module.lifecycle} · Installed: {module.lifecycle === "installed" || module.lifecycle === "enabled" ? "Yes" : "No"}
-              {" · "}Enabled: {module.lifecycle === "enabled" ? "Yes" : "No"}
-            </p>
-            <p>Module ID: {module.id} · Runtime health: unavailable; no module runtime exists.</p>
-            {module.version && <p>Version: {module.version}</p>}
-            <h3>Declared permissions</h3>
-            {module.declaredPermissions.length === 0 ? (
-              <p>None declared. Requirements for planned products are not specified yet. Missing permissions are denied.</p>
-            ) : (
-              <ul>
-                {module.declaredPermissions.map(permission => (
-                  <li key={permission}>{permission}: {module.permissionPolicy[permission] ?? "deny"}</li>
-                ))}
-              </ul>
-            )}
-          </details>
-        </article>
-      ))}
+      <p className="page-intro">Explore the VSA roadmap. Modules describe planned products; installation and execution are not implemented.</p>
+      {modules !== null && !error && <>
+        <div className="module-filters">
+          <label className="search-filter" htmlFor="module-search">Find modules
+            <input id="module-search" type="search" maxLength={128} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name, ID or description" />
+          </label>
+          <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
+          <button type="button" disabled={!query && lifecycle === "all"} onClick={() => { setQuery(""); setLifecycle("all"); }}>Clear filters</button>
+        </div>
+        <p className="result-count" role="status" aria-live="polite">{visibleModules.length} of {modules.length} modules</p>
+      </>}
+      {error ? <div className="notice"><p role="alert">Module registry unavailable.</p><button type="button" onClick={() => void reload()}>Retry modules</button></div>
+        : modules === null ? <p className="empty-state" role="status">Loading modules…</p>
+        : modules.length === 0 ? <p className="empty-state">No modules registered.</p>
+        : visibleModules.length === 0 ? <p className="empty-state">No matching modules. Clear filters to see the registry.</p>
+        : <div className="module-list">{visibleModules.map(module => (
+          <article className="module-card" key={module.id}>
+            <div className="module-heading"><h2>{module.name}</h2><span className={`lifecycle-badge lifecycle-${module.lifecycle}`}>{lifecycleLabels[module.lifecycle]}</span></div>
+            <p className="module-description">{module.description}</p>
+            <details>
+              <summary>Module details</summary>
+              <div className="module-details">
+                <dl className="metadata">
+                  <div><dt>Module ID</dt><dd><code>{module.id}</code></dd></div>
+                  <div><dt>Version</dt><dd>{module.version ?? "Not released"}</dd></div>
+                  <div><dt>Runtime</dt><dd>Not implemented</dd></div>
+                </dl>
+                <div className="permission-section">
+                  <h3>Permission declarations</h3>
+                  {module.declaredPermissions.length === 0
+                    ? <p>No permissions declared. Planned requirements have not been reviewed.</p>
+                    : <ul className="permission-list">{module.declaredPermissions.map(permission => (
+                      <li key={permission}><span>{permissionLabels[permission]}</span><span>{module.permissionPolicy[permission] === "allow" ? "Allowed by policy" : "Denied by policy"}</span></li>
+                    ))}</ul>}
+                  <p className="muted">Missing permissions are denied. Policy metadata does not provide an OS sandbox.</p>
+                </div>
+              </div>
+            </details>
+          </article>
+        ))}</div>}
     </section>
   );
 }

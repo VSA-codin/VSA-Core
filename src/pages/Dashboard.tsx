@@ -10,7 +10,7 @@ export function Dashboard({ coreStatus, coreError }: { coreStatus: CoreStatus | 
           <h2>{coreStatus?.name ?? "VSA CORE"}</h2>
           <p className="hero-copy">
             Privacy-first infrastructure for VSA applications, modules,
-            automation and self-hosted services.
+            and future local workflows.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export function Dashboard({ coreStatus, coreError }: { coreStatus: CoreStatus | 
         <article className="status-card">
           <span className="card-label">PRIVACY</span>
           <strong>Local First</strong>
-          <p>Telemetry collection is not implemented. Local settings stay on this device.</p>
+          <p>No telemetry or account required. Settings stay on this device.</p>
         </article>
 
         <article className="status-card">
@@ -52,7 +52,7 @@ export function Dashboard({ coreStatus, coreError }: { coreStatus: CoreStatus | 
             <h2>VSA CORE foundation</h2>
           </div>
 
-          <span className="development-badge">Early Development</span>
+          <span className="development-badge">Foundation preview</span>
         </div>
 
         <div className="foundation-grid">
