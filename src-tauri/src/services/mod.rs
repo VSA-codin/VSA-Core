@@ -14,6 +14,12 @@ impl SettingsService {
         self.store.save(&settings)?;
         Ok(settings)
     }
+    pub fn recovery_available(&self) -> bool {
+        self.store.recovery_available()
+    }
+    pub fn recover(&self) -> Result<AppSettings, &'static str> {
+        self.store.recover()
+    }
     pub fn diagnostics(
         &self,
         registry: &crate::core::ModuleRegistry,

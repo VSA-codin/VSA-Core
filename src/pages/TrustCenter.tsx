@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { api, type Diagnostics } from "../services/api";
 
-type Diagnostics = {
-  version: string; platform: string; architecture: string; runtime: string; buildMode: string;
-  localFirst: boolean; telemetryImplemented: boolean; accountRequired: boolean;
-  configDirectory: string | null; dataDirectory: string | null; storageStatus: string; registryStatus: string;
-  totalModules: number; enabledModules: number; allowedPermissions: number;
-};
 export function TrustCenter() {
   const [showPaths, setShowPaths] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
@@ -14,7 +8,7 @@ export function TrustCenter() {
   const [pathsError, setPathsError] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
-    invoke<Diagnostics>("get_diagnostics")
+    api.getDiagnostics()
       .then(setDiagnostics)
       .catch(() => setError(true));
   }, []);
@@ -28,7 +22,7 @@ export function TrustCenter() {
     }
     setPathsLoading(true);
     try {
-      setDiagnostics(await invoke<Diagnostics>("get_diagnostics", { includePaths: true }));
+      setDiagnostics(await api.getDiagnostics(true));
       setShowPaths(true);
     } catch {
       setPathsError(true);
@@ -52,7 +46,8 @@ export function TrustCenter() {
   ];
   return (
     <section className="panel">
-      <h2>Local diagnostics</h2>
+      <h2>Implemented</h2>
+      <h3>Local diagnostics</h3>
       <p>This information stays in this view. Directory paths can identify your local user; review before sharing a screenshot.</p>
       <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
         {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
@@ -66,10 +61,12 @@ export function TrustCenter() {
           </div>
         ))}
       </dl>
-      <h2>Permission foundation</h2>
+      <h3>Permission foundation</h3>
       <p>Implemented: declared permission metadata and deny by default policy. No grants or module execution are exposed. This logical policy model is not an OS sandbox.</p>
-      <p>Planned: reviewed module permissions and execution isolation.</p>
-      <p>Not implemented yet: OS sandbox, Vault, encryption, updater, module installation, and log collection.</p>
+      <h2>Not implemented yet</h2>
+      <p>OS sandbox, Vault, encryption, updater, module installation, execution isolation, and log collection.</p>
+      <h2>Current limitations</h2>
+      <p>Permission decisions describe metadata only; no module execution exists to enforce them. Storage readability does not verify write access. Local paths can identify users when revealed. Same-user filesystem races and cross-process settings coordination are not prevented.</p>
     </section>
   );
 }

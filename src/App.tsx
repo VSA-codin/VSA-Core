@@ -1,19 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { api, type CoreStatus } from "./services/api";
 import "./App.css";
 import { Modules } from "./pages/Modules";
 import { TrustCenter } from "./pages/TrustCenter";
-import { Settings, type AppSettings } from "./pages/Settings";
-
-type CoreStatus = {
-  name: string;
-  version: string;
-  runtime: string;
-  mode: string;
-  privacy: string;
-  totalModules: number;
-  enabledModules: number;
-};
+import { Settings } from "./pages/Settings";
+import type { AppSettings } from "./services/api";
 
 const navigation = [
   "Dashboard",
@@ -37,10 +28,10 @@ function App() {
   }, [page]);
 
   useEffect(() => {
-    invoke<AppSettings>("get_settings")
+    api.getSettings()
       .then(setSettings)
       .catch(() => setSettingsError(true));
-    invoke<CoreStatus>("get_core_status")
+    api.getCoreStatus()
       .then((status) => {
         setCoreStatus(status);
         setCoreError(false);

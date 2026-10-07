@@ -11,9 +11,9 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 - Local first
 - No forced VSA account
 - No hidden telemetry
-- Secrets stay local
+- No secret collection or storage implemented
 - No telemetry or crash reporting implemented
-- Windows 10 / Windows 11 / Linux support
+- Target platforms: Windows 10 / Windows 11 / Linux (native verification pending)
 - Modular architecture
 - Planned: independently disableable optional modules
 - Self-hostable where applicable
@@ -56,7 +56,7 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 
 ## Development status
 
-VSA CORE is currently in early development. Implemented foundations include a metadata-only module registry, working navigation, local compact-layout settings, deny-by-default permission metadata, and local Trust Center diagnostics. Planned products cannot be installed or executed.
+VSA CORE is currently in early development. Implemented foundations include a metadata-only module registry, working navigation, local compact-layout settings with explicit backup-preserving corruption recovery, deny-by-default permission metadata, and local Trust Center diagnostics. Planned products cannot be installed or executed.
 
 See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation, updater, and executable modules are not implemented.
 

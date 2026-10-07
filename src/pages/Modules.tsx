@@ -1,22 +1,12 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-
-type ModuleDescriptor = {
-  id: string;
-  name: string;
-  description: string;
-  version: string | null;
-  lifecycle: "planned" | "available" | "installed" | "enabled";
-  declaredPermissions: string[];
-  permissionPolicy: Record<string, "allow" | "deny">;
-};
+import { api, type ModuleDescriptor } from "../services/api";
 
 export function Modules() {
   const [modules, setModules] = useState<ModuleDescriptor[] | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    invoke<ModuleDescriptor[]>("get_modules")
+    api.getModules()
       .then(setModules)
       .catch(() => setError(true));
   }, []);

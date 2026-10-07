@@ -39,8 +39,53 @@ impl SettingsStore {
             .map_err(|_| "Settings JSON is invalid; existing file was preserved")
     }
     pub fn save(&self, settings: &AppSettings) -> Result<(), &'static str> {
-        // Validate before replacing: corrupted existing settings require manual recovery.
+        // Ordinary saves never repair invalid settings.
         self.load()?;
+        self.write(settings)
+    }
+    pub fn recovery_available(&self) -> bool {
+        self.corrupted_bytes().is_ok()
+    }
+    fn corrupted_bytes(&self) -> Result<Vec<u8>, &'static str> {
+        let path = self.directory.join("settings.json");
+        let metadata = fs::symlink_metadata(&path).map_err(|_| "Settings recovery unavailable")?;
+        if !metadata.is_file() || metadata.len() > 16384 {
+            return Err("Settings recovery unavailable");
+        }
+        let mut bytes = Vec::new();
+        fs::File::open(path)
+            .map_err(|_| "Settings recovery unavailable")?
+            .take(16385)
+            .read_to_end(&mut bytes)
+            .map_err(|_| "Settings recovery unavailable")?;
+        if bytes.len() > 16384 || serde_json::from_slice::<AppSettings>(&bytes).is_ok() {
+            return Err("Settings recovery unavailable");
+        }
+        Ok(bytes)
+    }
+    pub fn recover(&self) -> Result<AppSettings, &'static str> {
+        // Revalidate under the service lock; never infer corruption from a load error.
+        let bytes = self.corrupted_bytes()?;
+        let backup = self.directory.join("settings.json.corrupt.bak");
+        let mut options = OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options
+            .open(backup)
+            .map_err(|_| "Recovery backup unavailable; existing files preserved")?;
+        file.write_all(&bytes)
+            .and_then(|_| file.sync_all())
+            .map_err(|_| "Recovery backup failed; original settings preserved")?;
+        drop(file);
+        let defaults = AppSettings::default();
+        self.write(&defaults)?;
+        Ok(defaults)
+    }
+    fn write(&self, settings: &AppSettings) -> Result<(), &'static str> {
         fs::create_dir_all(&self.directory).map_err(|_| "Settings directory cannot be created")?;
         let bytes =
             serde_json::to_vec_pretty(settings).map_err(|_| "Settings cannot be encoded")?;
@@ -145,6 +190,7 @@ mod tests {
         symlink(&target, fixture.0.join("settings.json")).unwrap();
         assert!(fixture.store().load().is_err());
         assert!(fixture.store().save(&AppSettings::default()).is_err());
+        assert!(fixture.store().recover().is_err());
         assert_eq!(
             fs::read_to_string(&target).unwrap(),
             r#"{"compactLayout":true}"#
@@ -165,6 +211,65 @@ mod tests {
         assert_eq!(
             fs::read_to_string(fixture.0.join("settings.json.tmp")).unwrap(),
             "do not overwrite"
+        );
+    }
+    #[test]
+    fn recovery_preserves_exact_bytes_and_persists_defaults() {
+        for bytes in [b"broken".as_slice(), b"{\"unknown\":true}", &[0xff, 0xfe]] {
+            let fixture = Fixture::new();
+            let store = fixture.store();
+            fs::write(fixture.0.join("settings.json"), bytes).unwrap();
+            assert!(store.recovery_available());
+            assert_eq!(store.recover().unwrap(), AppSettings::default());
+            assert_eq!(
+                fs::read(fixture.0.join("settings.json.corrupt.bak")).unwrap(),
+                bytes
+            );
+            assert_eq!(store.load().unwrap(), AppSettings::default());
+            store
+                .save(&AppSettings {
+                    compact_layout: true,
+                })
+                .unwrap();
+            assert!(store.load().unwrap().compact_layout);
+            assert!(!store.recovery_available());
+        }
+    }
+    #[test]
+    fn recovery_refuses_missing_valid_changed_and_unsafe_targets() {
+        let fixture = Fixture::new();
+        let store = fixture.store();
+        assert!(store.recover().is_err());
+        let path = fixture.0.join("settings.json");
+        fs::write(&path, "broken").unwrap();
+        assert!(store.recovery_available());
+        fs::write(&path, "{}").unwrap();
+        assert!(store.recover().is_err());
+        fs::write(&path, vec![0xff; 16385]).unwrap();
+        assert!(store.recover().is_err());
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        assert!(store.recover().is_err());
+        assert!(!fixture.0.join("settings.json.corrupt.bak").exists());
+    }
+    #[test]
+    fn recovery_collisions_preserve_original_and_backup() {
+        let fixture = Fixture::new();
+        let store = fixture.store();
+        let path = fixture.0.join("settings.json");
+        let backup = fixture.0.join("settings.json.corrupt.bak");
+        fs::write(&path, "broken").unwrap();
+        fs::write(&backup, "previous backup").unwrap();
+        assert!(store.recover().is_err());
+        assert_eq!(fs::read_to_string(&backup).unwrap(), "previous backup");
+        fs::remove_file(&backup).unwrap();
+        fs::write(fixture.0.join("settings.json.tmp"), "interrupted").unwrap();
+        assert!(store.recover().is_err());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "broken");
+        assert_eq!(fs::read_to_string(&backup).unwrap(), "broken");
+        assert_eq!(
+            fs::read_to_string(fixture.0.join("settings.json.tmp")).unwrap(),
+            "interrupted"
         );
     }
 }

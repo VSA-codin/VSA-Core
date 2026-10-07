@@ -10,19 +10,11 @@ Remaining native checks: launch on Linux WebKitGTK and Windows WebView2, resize 
 
 CI now runs frontend build and Rust formatting/check/Clippy/tests on both Linux and Windows without bundling. Existing storage tests exercise replacement, corrupt content preservation, oversized/non-regular rejection, and temporary-file collisions; Unix additionally tests symlink rejection. Windows ACL behavior and native dialogs are not certified by these checks.
 
-## Corrupted settings recovery design (implementation deferred)
+## Corrupted settings recovery
 
-Current behavior remains read-only retry and manual repair, with no automatic reset. A failed load is not proof of corruption: access failures, unsafe file types, oversized input, and invalid JSON must be distinguished before enabling recovery.
+Recovery is now implemented as an explicit two-step Settings action. Only readable regular files of at most 16 KiB with invalid JSON/schema are eligible. The backend revalidates on execution, flushes an exclusively created `settings.json.corrupt.bak`, then replaces the original with defaults using the existing same-directory temporary-write mechanism. Missing/healthy files and unsafe file types are refused. Existing backups and temporary files are preserved and block recovery; manual review is required to resolve these cases.
 
-A future explicit “Back up corrupted settings and reset” action must:
-
-1. Enable only for bounded, readable, regular settings files with invalid JSON/schema. Refuse valid/missing files, symlinks, directories, inaccessible files, and oversized files.
-2. Explain that the original bytes will remain in the private config directory and the compact preference will return to default. Require a separate user confirmation; never repair on startup or retry.
-3. Serialize through the settings mutex, revalidate at execution time, and create a uniquely named backup exclusively with restrictive Unix mode/inherited Windows ACLs. Never overwrite an existing backup. Write and flush all original bytes before changing settings.
-4. Commit defaults with a same-directory exclusive temporary file. On any backup or replacement failure preserve the original and return a generic error without paths or content. Keep any completed backup for manual review. Do not automatically delete backups or interrupted writes.
-5. Test healthy/missing refusal, exact byte preservation, unknown fields, malformed UTF-8, backup collisions, backup write/flush failures, reset write/replacement failures, changed input, and platform file types/permissions on Linux and Windows. State the existing single-process and same-user race limitations.
-
-Implementation is deferred until the failure paths and native Windows behavior can be verified. No recovery command or destructive UI is exposed in this sprint.
+Tests cover exact malformed JSON, unknown-field and invalid UTF-8 backup preservation, default persistence and subsequent replacement, missing/healthy/changed/oversized/directory refusal, backup collisions, interrupted reset writes, and Unix symlink refusal. Native Windows interaction, ACL behavior, real disk-full/flush failures, and power-loss behavior remain unverified. No test claim substitutes for those observations. Same-user races and concurrent application processes remain outside the protection boundary.
 
 ## Diagnostics privacy
 

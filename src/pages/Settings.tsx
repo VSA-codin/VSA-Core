@@ -1,20 +1,30 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-
-export type AppSettings = { compactLayout: boolean };
+import { api, type AppSettings } from "../services/api";
 
 export function Settings({ onChange }: { onChange: (settings: AppSettings) => void }) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [recoverable, setRecoverable] = useState(false);
+  const [confirmRecovery, setConfirmRecovery] = useState(false);
   const [saved, setSaved] = useState(false);
 
   async function load() {
+    setLoading(true);
+    setSaved(false);
     setError("");
+    setRecoverable(false);
+    setConfirmRecovery(false);
     try {
-      setSettings(await invoke<AppSettings>("get_settings"));
+      const result = await api.getSettings();
+      setSettings(result);
+      onChange(result);
     } catch {
-      setError("Settings cannot be loaded. Existing files are preserved. Back up settings.json before repairing it in the application config directory, then retry.");
+      setError("Settings cannot be loaded. Existing files are preserved. Retry or use explicit recovery if available; access errors and unsafe files require manual review.");
+      setRecoverable(await api.recoveryAvailable().catch(() => false));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -26,7 +36,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
     setError("");
     setSaved(false);
     try {
-      const result = await invoke<AppSettings>("update_settings", { settings });
+      const result = await api.updateSettings(settings);
       setSettings(result);
       onChange(result);
       setSaved(true);
@@ -37,13 +47,43 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
     }
   }
 
+  async function recover() {
+    setSaving(true);
+    setError("");
+    try {
+      const result = await api.recoverSettings();
+      setSettings(result);
+      onChange(result);
+      setRecoverable(false);
+      setConfirmRecovery(false);
+      setSaved(true);
+    } catch {
+      setError("Recovery failed. Original settings are preserved. A backup or interrupted temporary file may require manual review before retrying.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="panel">
       <h2>Local settings</h2>
       <p>Stored on this device. No secrets or telemetry configuration.</p>
       {error && <p role="alert">{error}</p>}
-      {!settings && error && <button type="button" onClick={load}>Retry loading settings</button>}
-      {!settings && !error && <p role="status">Loading settings…</p>}
+      {!settings && error && <button type="button" disabled={saving || loading} onClick={load}>Retry loading settings</button>}
+      {!settings && recoverable && (
+        <div>
+          <p>Recovery saves the original bytes as settings.json.corrupt.bak in the application config directory, then resets compact layout to Off. Existing backups are never overwritten.</p>
+          <button type="button" disabled={saving || loading} aria-expanded={confirmRecovery} onClick={() => setConfirmRecovery(value => !value)}>Review settings recovery</button>
+          {confirmRecovery && (
+            <div role="group" aria-label="Confirm settings recovery">
+              <p>Back up the corrupted settings and reset to defaults?</p>
+              <button type="button" disabled={saving} onClick={() => void recover()}>{saving ? "Recovering…" : "Back up and reset settings"}</button>{" "}
+              <button type="button" disabled={saving} onClick={() => setConfirmRecovery(false)}>Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
+      {loading && <p role="status">Loading settings…</p>}
       {settings && (
         <>
           <label className={`setting-toggle ${saving ? "disabled" : ""}`}>
@@ -79,7 +119,9 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
             <button type="button" disabled={saving} onClick={save}>
               {saving ? "Saving…" : "Save settings"}
             </button>
+            {" "}<button type="button" disabled={saving} onClick={() => { setSettings({ compactLayout: false }); setSaved(false); }}>Reset preference</button>
           </p>
+          <p>Reset changes the preference above. Save settings to persist it.</p>
         </>
       )}
       {saved && <p role="status">Settings saved locally.</p>}

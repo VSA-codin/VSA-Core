@@ -9,14 +9,13 @@ use tauri::{Manager, State};
 pub fn get_diagnostics(
     app: tauri::AppHandle,
     include_paths: Option<bool>,
-    registry: State<'_, Mutex<ModuleRegistry>>,
+    registry: State<'_, ModuleRegistry>,
     settings: State<'_, Mutex<SettingsService>>,
 ) -> Result<Diagnostics, String> {
     let directory = app
         .path()
         .app_data_dir()
         .map_err(|_| "Application data location unavailable")?;
-    let registry = registry.lock().map_err(|_| "Module registry unavailable")?;
     let settings = settings
         .lock()
         .map_err(|_| "Settings service unavailable")?;
