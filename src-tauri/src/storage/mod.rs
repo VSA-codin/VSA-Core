@@ -7,6 +7,23 @@ use std::{
 
 const MAX_SETTINGS_BYTES: u64 = 16 * 1024;
 
+// Reject direct links, including Windows junction/reparse metadata. Ancestor
+// links and races between checks and operations remain outside this boundary.
+fn is_link(metadata: &fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return true;
+        }
+    }
+    false
+}
+
 fn create_private_file(path: &std::path::Path) -> std::io::Result<File> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
@@ -32,8 +49,10 @@ impl SettingsStore {
         // Windows may report a child under a regular file as NotFound rather
         // than NotADirectory. Check the configured directory before interpreting
         // a missing settings file as an intentional default.
-        match fs::metadata(&self.directory) {
-            Ok(metadata) if !metadata.is_dir() => return Err("Settings directory unavailable"),
+        match fs::symlink_metadata(&self.directory) {
+            Ok(metadata) if !metadata.is_dir() || is_link(&metadata) => {
+                return Err("Settings directory unavailable")
+            }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err("Settings directory unavailable"),
             Ok(_) => {}
@@ -42,7 +61,11 @@ impl SettingsStore {
         match fs::symlink_metadata(&path) {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(_) => return Err("Settings cannot be read"),
-            Ok(metadata) if !metadata.is_file() || metadata.len() > MAX_SETTINGS_BYTES => {
+            Ok(metadata)
+                if !metadata.is_file()
+                    || is_link(&metadata)
+                    || metadata.len() > MAX_SETTINGS_BYTES =>
+            {
                 return Err("Settings file is invalid")
             }
             Ok(_) => {}
@@ -101,12 +124,33 @@ impl SettingsStore {
             .and_then(|_| file.sync_all())
             .map_err(|_| "Recovery backup failed; original settings preserved")?;
         drop(file);
-        let defaults = AppSettings::default();
-        self.write(&defaults)?;
-        Ok(defaults)
+        // Detect ordinary changes during backup before resetting. This is a
+        // consistency check, not an atomic compare-and-replace or race defense.
+        self.reset_after_backup(&bytes)?;
+        Ok(AppSettings::default())
+    }
+    fn reset_after_backup(&self, backed_up: &[u8]) -> Result<(), &'static str> {
+        if self.read_bytes()?.as_deref() != Some(backed_up) {
+            return Err("Settings changed during recovery; backup preserved, reset refused");
+        }
+        self.write(&AppSettings::default())
     }
     fn write(&self, settings: &AppSettings) -> Result<(), &'static str> {
-        fs::create_dir_all(&self.directory).map_err(|_| "Settings directory cannot be created")?;
+        let mut builder = fs::DirBuilder::new();
+        builder.recursive(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            builder.mode(0o700);
+        }
+        builder
+            .create(&self.directory)
+            .map_err(|_| "Settings directory cannot be created")?;
+        let metadata =
+            fs::symlink_metadata(&self.directory).map_err(|_| "Settings directory unavailable")?;
+        if !metadata.is_dir() || is_link(&metadata) {
+            return Err("Settings directory unavailable");
+        }
         let bytes =
             serde_json::to_vec_pretty(settings).map_err(|_| "Settings cannot be encoded")?;
         let temporary = self.directory.join("settings.json.tmp");
@@ -151,6 +195,123 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+    #[cfg(unix)]
+    #[test]
+    fn new_directories_are_private_and_existing_directory_modes_are_preserved() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = Fixture::new();
+        let directory = fixture.0.join("new-parent").join("new-config");
+        SettingsStore::new(directory.clone())
+            .save(&AppSettings::default())
+            .unwrap();
+        for path in [&directory, &fixture.0.join("new-parent")] {
+            assert_eq!(fs::metadata(path).unwrap().permissions().mode() & 0o077, 0);
+        }
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o750)).unwrap();
+        SettingsStore::new(directory.clone())
+            .save(&AppSettings::default())
+            .unwrap();
+        assert_eq!(
+            fs::metadata(directory).unwrap().permissions().mode() & 0o777,
+            0o750
+        );
+    }
+    #[test]
+    fn recovery_reset_refuses_changes_after_backup_without_overwriting_either_file() {
+        for changed in [b"{}".as_slice(), b"different corruption"] {
+            let fixture = Fixture::new();
+            let path = fixture.0.join("settings.json");
+            let backup = fixture.0.join("settings.json.corrupt.bak");
+            fs::write(&backup, b"original corruption").unwrap();
+            fs::write(&path, changed).unwrap();
+            assert!(fixture
+                .store()
+                .reset_after_backup(b"original corruption")
+                .is_err());
+            assert_eq!(fs::read(&path).unwrap(), changed);
+            assert_eq!(fs::read(&backup).unwrap(), b"original corruption");
+            assert!(!fixture.0.join("settings.json.tmp").exists());
+        }
+    }
+    #[test]
+    fn recovery_reset_refuses_missing_target_and_keeps_backup() {
+        let fixture = Fixture::new();
+        let backup = fixture.0.join("settings.json.corrupt.bak");
+        fs::write(&backup, b"original corruption").unwrap();
+        assert!(fixture
+            .store()
+            .reset_after_backup(b"original corruption")
+            .is_err());
+        assert!(!fixture.0.join("settings.json").exists());
+        assert_eq!(fs::read(backup).unwrap(), b"original corruption");
+    }
+    #[test]
+    fn unicode_directory_and_duplicate_escaped_settings_keys_are_handled_safely() {
+        let fixture = Fixture::new();
+        let directory = fixture.0.join("VSA Żółć 日本語 spaces");
+        let store = SettingsStore::new(directory.clone());
+        store
+            .save(&AppSettings {
+                compact_layout: true,
+            })
+            .unwrap();
+        assert!(store.load().unwrap().compact_layout);
+        let bytes = br#"{"compactLayout":true,"compact\u004cayout":false}"#;
+        fs::write(directory.join("settings.json"), bytes).unwrap();
+        assert!(store.save(&AppSettings::default()).is_err());
+        assert_eq!(store.load_state(), SettingsLoadState::Invalid);
+        store.recover().unwrap();
+        assert_eq!(
+            fs::read(directory.join("settings.json.corrupt.bak")).unwrap(),
+            bytes
+        );
+    }
+    #[cfg(unix)]
+    #[test]
+    fn direct_directory_link_is_refused_without_touching_destination() {
+        use std::os::unix::fs::symlink;
+        let fixture = Fixture::new();
+        let destination = fixture.0.join("destination");
+        fs::create_dir(&destination).unwrap();
+        fs::write(destination.join("settings.json"), "broken").unwrap();
+        let link = fixture.0.join("config-link");
+        symlink(&destination, &link).unwrap();
+        let store = SettingsStore::new(link);
+        assert_eq!(store.load_state(), SettingsLoadState::Unavailable);
+        assert!(store.load().is_err());
+        assert!(store.save(&AppSettings::default()).is_err());
+        assert!(store.recover().is_err());
+        assert!(store.write(&AppSettings::default()).is_err());
+        assert_eq!(
+            fs::read(destination.join("settings.json")).unwrap(),
+            b"broken"
+        );
+        assert!(!destination.join("settings.json.tmp").exists());
+        assert!(!destination.join("settings.json.corrupt.bak").exists());
+    }
+    #[cfg(unix)]
+    #[test]
+    fn read_only_directory_refuses_writes_and_preserves_settings() {
+        use std::os::unix::fs::PermissionsExt;
+        let fixture = Fixture::new();
+        let store = fixture.store();
+        store.save(&AppSettings::default()).unwrap();
+        fs::set_permissions(&fixture.0, fs::Permissions::from_mode(0o500)).unwrap();
+        let writable = create_private_file(&fixture.0.join("permission-probe"));
+        // A privileged test runner can bypass mode bits. Restore permissions
+        // before any assertion/cleanup, then skip that unsupported boundary.
+        if writable.is_ok() {
+            fs::set_permissions(&fixture.0, fs::Permissions::from_mode(0o700)).unwrap();
+            return;
+        }
+        let result = store.save(&AppSettings {
+            compact_layout: true,
+        });
+        fs::set_permissions(&fixture.0, fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(result.is_err());
+        assert_eq!(store.load().unwrap(), AppSettings::default());
+        assert!(!fixture.0.join("settings.json.tmp").exists());
     }
     #[test]
     fn missing_config_directory_uses_defaults_without_creating_it() {

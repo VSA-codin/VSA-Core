@@ -49,9 +49,12 @@ impl AutomationPlan {
         for identifier in [&id, &module_id, &action_id] {
             super::module_registry::validate_identifier(identifier)?;
         }
-        if name.trim().is_empty() || name.len() > 128 || name.chars().any(char::is_control) {
+        if name.trim().is_empty()
+            || name.len() > 128
+            || super::module_registry::has_unsafe_display_characters(&name)
+        {
             return Err(
-                "Automation name must be nonblank, bounded, and contain no control characters",
+                "Automation name must be nonblank, bounded, and contain no control or directional formatting characters",
             );
         }
         trigger.validate()?;
@@ -110,6 +113,8 @@ mod tests {
             r#"{"kind":"shell","command":"run"}"#,
             r#"{"kind":"manual","command":"run"}"#,
             r#"{"kind":"interval","everyMinutes":1,"everyMinutes":2}"#,
+            r#"{"kind":"manual","kind":"interval","everyMinutes":1}"#,
+            r#"{"kind":"interval","kind":"manual","everyMinutes":1}"#,
             r#"{"kind":"interval","everyMinutes":-1}"#,
             r#"{"kind":"interval","everyMinutes":1.5}"#,
             r#"{"kind":"interval"}"#,
@@ -140,7 +145,12 @@ mod tests {
                 .is_err());
             }
         }
-        for name in [" ".into(), "bad\nname".into(), "é".repeat(65)] {
+        for name in [
+            " ".into(),
+            "bad\nname".into(),
+            "bad\u{202e}name".into(),
+            "é".repeat(65),
+        ] {
             assert!(AutomationPlan::new(
                 "example".into(),
                 name,

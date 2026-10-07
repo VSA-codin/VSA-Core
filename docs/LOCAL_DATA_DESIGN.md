@@ -22,7 +22,7 @@ Portable mode requires an explicit storage-location choice and a separate threat
 
 ## Backup and restore
 
-Current explicit corruption recovery preserves exact invalid settings bytes before resetting defaults. It is not a general backup/restore feature. Corrupt backups may contain unexpected user-provided data; do not automatically include them in support reports.
+Current explicit corruption recovery preserves exact invalid settings bytes before resetting defaults. It rereads the original after backup and refuses changed or missing targets; this is a consistency check with a remaining filesystem race. It is not a general backup/restore feature. Corrupt backups may contain unexpected user-provided data; do not automatically include them in support reports.
 
 A future nonsecret export should preview an allowlist of settings/module preferences, use an explicit user action, identify schema versions, and exclude Vault contents, credentials, paths, and account data unless separately reviewed. Restore should validate sizes and schema before mutation, preserve the prior configuration, show a diff, and require explicit confirmation. Never overwrite newer incompatible data.
 

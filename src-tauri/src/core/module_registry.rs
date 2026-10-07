@@ -19,6 +19,15 @@ pub(crate) fn validate_identifier(id: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
+// Directional formatting characters can disguise labels and versions in the
+// UI. Ordinary international text, including combining characters, is allowed.
+pub(crate) fn has_unsafe_display_characters(value: &str) -> bool {
+    value.chars().any(|character| {
+        character.is_control()
+            || matches!(character, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ModuleLifecycle {
@@ -63,8 +72,8 @@ impl ModuleDescriptor {
             (self.description.as_str(), 2048),
             (self.version.as_deref().unwrap_or(""), 64),
         ] {
-            if value.len() > limit || value.chars().any(char::is_control) {
-                return Err("Module metadata exceeds its limit or contains control characters");
+            if value.len() > limit || has_unsafe_display_characters(value) {
+                return Err("Module metadata exceeds its limit or contains control or directional formatting characters");
             }
         }
         if self.name.trim().is_empty() {
@@ -154,6 +163,35 @@ impl ModuleRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn directional_spoofing_is_rejected_without_rejecting_international_labels() {
+        let mut registry = ModuleRegistry::new();
+        for character in [
+            '\u{061c}', '\u{200e}', '\u{200f}', '\u{202e}', '\u{2066}', '\u{2069}',
+        ] {
+            for field in 0..3 {
+                let mut module = ModuleDescriptor::new("example", "Example", "Description");
+                module.lifecycle = ModuleLifecycle::Available;
+                module.version = Some("1.0.0".into());
+                let value = format!("label{character}text");
+                match field {
+                    0 => module.name = value,
+                    1 => module.description = value,
+                    _ => module.version = Some(value),
+                }
+                assert!(registry.register(module).is_err());
+                assert!(registry.modules().is_empty());
+            }
+        }
+        registry
+            .register(ModuleDescriptor::new(
+                "international",
+                "Żółć 日本語 e\u{0301}",
+                "مرحبا",
+            ))
+            .unwrap();
+        assert_eq!(registry.modules().len(), 1);
+    }
     #[test]
     fn larger_registry_retains_order_counts_and_contents_after_invalid_registration() {
         let mut registry = ModuleRegistry::new();

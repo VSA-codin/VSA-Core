@@ -10,9 +10,9 @@ This experimental contract describes modules; it does not install, load, execute
 | --- | --- |
 | schemaVersion | Integer 1; unsupported versions are refused |
 | id | 1–64 ASCII bytes: lowercase letters, digits, hyphens; starts/ends with a letter or digit |
-| name | Nonblank; at most 128 UTF-8 bytes; no control characters |
-| description | At most 2048 UTF-8 bytes; no control characters; may be empty |
-| version | Null/omitted for Planned; nonblank string up to 64 UTF-8 bytes for Available; no control characters |
+| name | Nonblank; at most 128 UTF-8 bytes; no control or Unicode directional formatting characters |
+| description | At most 2048 UTF-8 bytes; no control or Unicode directional formatting characters; may be empty |
+| version | Null/omitted for Planned; nonblank string up to 64 UTF-8 bytes for Available; no control or Unicode directional formatting characters |
 | lifecycle | Planned or Available only |
 | declaredPermissions | Required array of unique known capability names |
 

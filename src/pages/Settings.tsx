@@ -82,7 +82,7 @@ export function Settings({ onChange, onBusyChange }: {
       setSaved(true);
     } catch {
       if (current !== request.current) return;
-      setError("Recovery failed. Original settings are preserved. A backup or interrupted temporary file may require manual review before retrying.");
+      setError("Recovery did not complete. Review the current settings, recovery backup and any interrupted temporary file before retrying. Existing backups are never overwritten.");
     } finally {
       if (current === request.current) { setSaving(false); onBusyChange(false); }
     }

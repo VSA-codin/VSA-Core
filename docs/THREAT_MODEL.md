@@ -11,7 +11,7 @@ Current assets are local settings integrity, truthful registry metadata, UI trus
 | Compromised dependency / supply-chain attack | Lockfiles, existing CI/security checks; no bulk updates | Dependencies and build tools execute with developer privileges; review provenance and releases |
 | Secret leakage | Settings schema has no secret fields and rejects unknown fields; no secret features | Never introduce credentials into settings; future Vault requires independent architecture review |
 | Log leakage | No persistent application logs or support bundle; support preview uses a path-free field allowlist | Future logging requires redaction tests and retention policy; diagnostics paths can identify local users when explicitly revealed |
-| Unsafe filesystem access | Fixed app-specific filename, Tauri-resolved config location, bounded reads, regular-file checks, exclusive temporary creation | Same-user TOCTOU races, parent-directory symlinks, ACLs, concurrent processes, and unusual filesystem semantics remain risks |
+| Unsafe filesystem access | Fixed app-specific filename, Tauri-resolved config location, bounded reads, regular-file/direct-link and Windows reparse-metadata checks, exclusive temporary creation | Same-user TOCTOU races, ancestor-directory symlinks, ACLs, concurrent processes, and unusual filesystem semantics remain risks |
 | Corrupted local configuration | Invalid content is reported and preserved; missing files use defaults; save refuses corrupt targets | Explicit confirmed recovery backs up bounded invalid settings before reset; existing backups/interrupted writes require manual review; parent directory is not synced for power-loss durability |
 | Command execution | No module or shell execution commands | Review any future process launch, arguments, privilege boundary, and sandbox |
 | Unsafe IPC input | Typed strict settings schema; eight narrow local commands; no user-supplied paths | Tauri custom commands are reachable by compromised authorized webview content; future inputs need size and semantic validation |
@@ -32,6 +32,9 @@ Local diagnostics omits config/data locations from default IPC responses and all
 
 Review executable modules, updater, Vault, credentials, browser integrations, external command execution, cloud accounts, remote administration, and production signing independently before implementation. Logical permission metadata must not be presented as enforced isolation.
 
-See [Future boundaries](FUTURE_BOUNDARIES.md) for the review gates before adding those systems. Current settings files have no protection against a compromised local account; parent-directory symlinks and Windows reparse points are not comprehensively defended against.
+See [Future boundaries](FUTURE_BOUNDARIES.md) for the review gates before adding those systems. Current settings files have no protection against a compromised local account; ancestor-directory symlinks and Windows reparse points are not comprehensively defended against, even though direct configured-directory and settings-target reparse metadata is refused.
 
 Automation plans are inert metadata with validated IDs and bounded intervals; they cannot be enabled, carry commands, or dispatch actions. Future action resolution and scheduling need separate review. The SDK is experimental source-level metadata, not a trusted executable plugin interface.
+
+
+Recovery rereads settings after flushing the exact-byte backup and refuses reset on changed or missing contents. There remains a race after this consistency check; it does not provide atomic conditional replacement or same-user tamper resistance. New Unix config directories are private (0700); existing directories retain their permissions and Windows inherits ACLs. Module and automation display metadata rejects control and directional formatting characters to reduce misleading labels, not all Unicode visual spoofing.

@@ -1,11 +1,9 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Local main window; no built-in plugin commands required",
   "windows": [
     "main"
   ],
-  "permissions": [
-    "core:default"
-  ]
+  "permissions": []
 }
