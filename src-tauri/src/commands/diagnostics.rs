@@ -21,3 +21,12 @@ pub fn get_diagnostics(
         .map_err(|_| "Settings service unavailable")?;
     Ok(settings.diagnostics(&registry, &directory, include_paths.unwrap_or(false)))
 }
+
+#[tauri::command]
+pub fn get_support_report(
+    app: tauri::AppHandle,
+    registry: State<'_, ModuleRegistry>,
+    settings: State<'_, Mutex<SettingsService>>,
+) -> Result<String, String> {
+    Ok(get_diagnostics(app, Some(false), registry, settings)?.support_report())
+}

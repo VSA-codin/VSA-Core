@@ -5,8 +5,8 @@ mod services;
 mod storage;
 
 use commands::{
-    get_core_status, get_diagnostics, get_modules, get_settings, recover_settings,
-    settings_recovery_available, update_settings,
+    get_core_status, get_diagnostics, get_modules, get_settings, get_support_report,
+    recover_settings, settings_recovery_available, update_settings,
 };
 use core::ModuleRegistry;
 use std::sync::Mutex;
@@ -30,7 +30,8 @@ pub fn run() {
             update_settings,
             settings_recovery_available,
             recover_settings,
-            get_diagnostics
+            get_diagnostics,
+            get_support_report
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

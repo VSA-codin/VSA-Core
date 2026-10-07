@@ -18,4 +18,8 @@ Tests cover exact malformed JSON, unknown-field and invalid UTF-8 backup preserv
 
 ## Diagnostics privacy
 
-The default diagnostics response contains null config/data locations. Only “Show local paths” requests those locations over local IPC. Hide removes paths from component state, and leaving the page unmounts that state. Reveal failures keep paths hidden. There is no export, logging, network sink, or environment enumeration. Revealed locations can identify the user in screenshots. A compromised authorized webview can still invoke the opt-in command; this UI choice is not an access-control boundary.
+The default diagnostics response contains null config/data locations. Only “Show local paths” requests those locations over local IPC. Hide removes paths from component state, and leaving the page unmounts that state. Reveal failures keep paths hidden. A user-requested sanitized support preview now provides selectable text without paths or file contents, even after paths are revealed. There is no file export, logging, network sink, or environment enumeration. Revealed locations can identify the user in screenshots. A compromised authorized webview can still invoke the opt-in command; this UI choice is not an access-control boundary.
+
+## Async and failure states
+
+Read-only views share stale-request guards and safe Retry actions. Settings reads, writes, recovery, path reveal, and support preview ignore results after their page unmounts. Compact-layout edits update the form immediately; Save applies and persists them. Unsaved changes are labeled and discarded when leaving Settings. Native keyboard focus, announcement timing, and layout at high text zoom still require observation. Development Strict Mode can dispatch two mount reads; stale results are discarded, and no effect performs writes.

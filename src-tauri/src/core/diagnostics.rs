@@ -23,6 +23,16 @@ pub struct Diagnostics {
     allowed_permissions: usize,
 }
 impl Diagnostics {
+    // An explicit allowlist, independent of optional path reveal. No file contents
+    // or user-controlled metadata are rendered into the shareable report.
+    pub fn support_report(&self) -> String {
+        format!(
+            "VSA CORE local support report\nVersion: {}\nPlatform: {}\nArchitecture: {}\nRuntime: {}\nBuild: {}\nLocal first: {}\nAccount required: {}\nTelemetry implemented: {}\nSettings: {}\nModules: {} total, {} enabled\nAllowed declared permissions: {}\nModule execution: not implemented\nOS sandbox: not implemented\nPaths and settings contents: excluded\nWrite access: not verified\n",
+            self.version, self.platform, self.architecture, self.runtime, self.build_mode,
+            self.local_first, self.account_required, self.telemetry_implemented,
+            self.storage_status, self.total_modules, self.enabled_modules, self.allowed_permissions,
+        )
+    }
     pub fn current(
         registry: &ModuleRegistry,
         config_directory: &std::path::Path,
@@ -69,6 +79,28 @@ impl Diagnostics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn support_report_is_deterministic_and_never_includes_revealed_paths() {
+        let registry = ModuleRegistry::roadmap().unwrap();
+        let private = std::path::Path::new("private-user-Żółć-token-fixture");
+        for state in [
+            SettingsLoadState::Missing,
+            SettingsLoadState::Loaded,
+            SettingsLoadState::Invalid,
+            SettingsLoadState::Unavailable,
+        ] {
+            let hidden = Diagnostics::current(&registry, private, private, state, false);
+            let revealed = Diagnostics::current(&registry, private, private, state, true);
+            let report = revealed.support_report();
+            assert_eq!(report, hidden.support_report());
+            assert_eq!(report, revealed.support_report());
+            assert!(!report.contains("private-user"));
+            assert!(!report.contains("token-fixture"));
+            assert!(report.contains("Modules: 4 total, 0 enabled"));
+            assert!(report.contains("OS sandbox: not implemented"));
+            assert!(report.contains("Paths and settings contents: excluded"));
+        }
+    }
     #[test]
     fn paths_require_explicit_opt_in_and_storage_errors_stay_generic() {
         let registry = ModuleRegistry::roadmap().unwrap();

@@ -32,6 +32,7 @@ export type Diagnostics = {
 };
 
 export const api = {
+  getSupportReport: () => invoke<string>("get_support_report"),
   getCoreStatus: () => invoke<CoreStatus>("get_core_status"),
   getModules: () => invoke<ModuleDescriptor[]>("get_modules"),
   getSettings: () => invoke<AppSettings>("get_settings"),

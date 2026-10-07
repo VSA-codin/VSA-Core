@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type CoreStatus } from "./services/api";
+import { api } from "./services/api";
 import "./App.css";
+import { useLocalResource } from "./hooks/useLocalResource";
+import { Dashboard } from "./pages/Dashboard";
 import { Modules } from "./pages/Modules";
 import { TrustCenter } from "./pages/TrustCenter";
 import { Settings } from "./pages/Settings";
@@ -16,29 +18,24 @@ const navigation = [
 ];
 
 function App() {
+  const settingsRevision = useRef(0);
   const contentRef = useRef<HTMLElement>(null);
   const [settingsError, setSettingsError] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({ compactLayout: false });
   const [page, setPage] = useState("Dashboard");
-  const [coreStatus, setCoreStatus] = useState<CoreStatus | null>(null);
-  const [coreError, setCoreError] = useState(false);
+  const { data: coreStatus, error: coreError, reload: reloadCore } = useLocalResource(api.getCoreStatus);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0 });
   }, [page]);
 
   useEffect(() => {
+    let active = true;
+    const revision = settingsRevision.current;
     api.getSettings()
-      .then(setSettings)
-      .catch(() => setSettingsError(true));
-    api.getCoreStatus()
-      .then((status) => {
-        setCoreStatus(status);
-        setCoreError(false);
-      })
-      .catch(() => {
-        setCoreError(true);
-      });
+      .then(value => { if (active && revision === settingsRevision.current) setSettings(value); })
+      .catch(() => { if (active && revision === settingsRevision.current) setSettingsError(true); });
+    return () => { active = false; };
   }, []);
 
   const isOnline = coreStatus !== null && !coreError;
@@ -87,98 +84,25 @@ function App() {
 
           <div className="core-status">
             {isOnline && <span className="status-dot" />}
-            {coreError ? "Core unavailable" : isOnline ? "Core online" : "Connecting..."}
+            {coreError ? "Core unavailable" : isOnline ? "Core responding" : "Connecting..."}
           </div>
         </header>
 
         {settingsError && <p role="alert">Saved layout could not be loaded. Using default layout; see Settings for recovery.</p>}
-        {page === "Dashboard" && (
-          <>
-            <section className="hero-card">
-              <div>
-                <p className="eyebrow">WELCOME TO</p>
-                <h2>{coreStatus?.name ?? "VSA CORE"}</h2>
-                <p className="hero-copy">
-                  Privacy-first infrastructure for VSA applications, modules,
-                  automation and self-hosted services.
-                </p>
-              </div>
-
-              <div className="hero-badge">
-                <span className="status-dot" />
-                {coreStatus?.privacy ?? "Local First"}
-              </div>
-            </section>
-
-            <section className="status-grid">
-              <article className="status-card">
-                <span className="card-label">CORE STATUS</span>
-                <strong>{isOnline ? "Operational" : coreError ? "Unavailable" : "Starting"}</strong>
-                <p>
-                  {isOnline
-                    ? "The local core status command responded."
-                    : coreError
-                      ? "The local VSA CORE backend could not be reached."
-                      : "Connecting to the local VSA CORE backend."}
-                </p>
-              </article>
-
-              <article className="status-card">
-                <span className="card-label">PRIVACY</span>
-                <strong>Local First</strong>
-                <p>No hidden telemetry. Your data stays local.</p>
-              </article>
-
-              <article className="status-card">
-                <span className="card-label">MODULES</span>
-                <strong>{coreStatus ? `${coreStatus.enabledModules} / ${coreStatus.totalModules} enabled` : "Unavailable"}</strong>
-                <p>Roadmap metadata only; no module execution.</p>
-              </article>
-            </section>
-
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">SYSTEM</p>
-                  <h3>VSA CORE foundation</h3>
-                </div>
-
-                <span className="development-badge">Early Development</span>
-              </div>
-
-              <div className="foundation-grid">
-                <div>
-                  <span>Runtime</span>
-                  <strong>{coreStatus?.runtime ?? "Tauri 2 + Rust"}</strong>
-                </div>
-
-                <div>
-                  <span>Interface</span>
-                  <strong>React + TypeScript</strong>
-                </div>
-
-                <div>
-                  <span>Account</span>
-                  <strong>Not required</strong>
-                </div>
-
-                <div>
-                  <span>Data mode</span>
-                  <strong>{coreStatus?.privacy ?? "Local First"}</strong>
-                </div>
-              </div>
-            </section>
-          </>
-        )}
+        {coreError && <div><p role="alert">Core status unavailable.</p><button type="button" onClick={() => void reloadCore()}>Retry core status</button></div>}
+        {page === "Dashboard" && <Dashboard coreStatus={coreStatus} coreError={coreError} />}
         {page === "Modules" && <Modules />}
         {page === "Trust Center" && <TrustCenter />}
         {["Automation", "Vault"].includes(page) && (
           <section className="panel">
             <h2>{page}</h2>
             <p>Not implemented yet.</p>
+            <p>{page === "Automation"
+              ? "Future local workflows and scheduling will require explicit permissions. No automation runs today."
+              : "Future secret storage requires a separately reviewed protection and recovery design. No secrets are stored or protected by this application today."}</p>
           </section>
         )}
-        {page === "Settings" && <Settings onChange={value => { setSettings(value); setSettingsError(false); }} />}
+        {page === "Settings" && <Settings onChange={value => { ++settingsRevision.current; setSettings(value); setSettingsError(false); }} />}
       </main>
     </div>
   );

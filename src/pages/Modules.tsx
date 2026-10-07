@@ -1,22 +1,15 @@
-import { useEffect, useState } from "react";
-import { api, type ModuleDescriptor } from "../services/api";
+import { useLocalResource } from "../hooks/useLocalResource";
+import { api } from "../services/api";
 
 export function Modules() {
-  const [modules, setModules] = useState<ModuleDescriptor[] | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    api.getModules()
-      .then(setModules)
-      .catch(() => setError(true));
-  }, []);
+  const { data: modules, error, reload } = useLocalResource(api.getModules);
 
   return (
     <section aria-label="Module registry">
       <p>Roadmap metadata only. Installation and execution are not implemented yet.</p>
       <p>Permissions are a logical policy model, not an OS sandbox. Missing or undeclared permissions are denied.</p>
       {error ? (
-        <p role="alert">Module registry unavailable.</p>
+        <div><p role="alert">Module registry unavailable.</p><button type="button" onClick={() => void reload()}>Retry modules</button></div>
       ) : modules === null ? (
         <p role="status">Loading modules…</p>
       ) : modules.length === 0 ? <p>No modules registered.</p> : modules.map(module => (

@@ -1,37 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocalResource } from "../hooks/useLocalResource";
+import { SupportReport } from "./SupportReport";
 import { api, type Diagnostics } from "../services/api";
 
 export function TrustCenter() {
   const [showPaths, setShowPaths] = useState(false);
-  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const { data: snapshot, error, reload } = useLocalResource(api.getDiagnostics);
+  const [revealed, setRevealed] = useState<Diagnostics | null>(null);
+  const request = useRef(0);
   const [pathsLoading, setPathsLoading] = useState(false);
   const [pathsError, setPathsError] = useState(false);
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    api.getDiagnostics()
-      .then(setDiagnostics)
-      .catch(() => setError(true));
-  }, []);
+  useEffect(() => () => { ++request.current; }, []);
 
   async function togglePaths() {
+    const current = ++request.current;
     setPathsError(false);
     if (showPaths) {
       setShowPaths(false);
-      setDiagnostics(value => value && ({ ...value, configDirectory: null, dataDirectory: null }));
+      setRevealed(null);
       return;
     }
     setPathsLoading(true);
     try {
-      setDiagnostics(await api.getDiagnostics(true));
+      const result = await api.getDiagnostics(true);
+      if (current !== request.current) return;
+      setRevealed(result);
       setShowPaths(true);
     } catch {
-      setPathsError(true);
+      if (current === request.current) setPathsError(true);
     } finally {
-      setPathsLoading(false);
+      if (current === request.current) setPathsLoading(false);
     }
   }
 
-  if (error) return <p role="alert">Local diagnostics unavailable.</p>;
+  if (error) return <div><p role="alert">Local diagnostics unavailable.</p><button type="button" onClick={() => void reload()}>Retry diagnostics</button></div>;
+  const diagnostics = showPaths ? revealed : snapshot;
   if (!diagnostics) return <p role="status">Loading local diagnostics…</p>;
   const rows: [string, string][] = [
     ["Local first", diagnostics.localFirst ? "Implemented: local IPC and settings" : "Unavailable"],
@@ -61,6 +64,7 @@ export function TrustCenter() {
           </div>
         ))}
       </dl>
+      <SupportReport />
       <h3>Permission foundation</h3>
       <p>Implemented: declared permission metadata and deny by default policy. No grants or module execution are exposed. This logical policy model is not an OS sandbox.</p>
       <h2>Not implemented yet</h2>

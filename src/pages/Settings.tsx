@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type AppSettings } from "../services/api";
 
 export function Settings({ onChange }: { onChange: (settings: AppSettings) => void }) {
+  const request = useRef(0);
+  const [dirty, setDirty] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -11,6 +13,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
   const [saved, setSaved] = useState(false);
 
   async function load() {
+    const current = ++request.current;
     setLoading(true);
     setSaved(false);
     setError("");
@@ -18,49 +21,65 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
     setConfirmRecovery(false);
     try {
       const result = await api.getSettings();
+      if (current !== request.current) return;
       setSettings(result);
+      setDirty(false);
       onChange(result);
     } catch {
+      if (current !== request.current) return;
       setError("Settings cannot be loaded. Existing files are preserved. Retry or use explicit recovery if available; access errors and unsafe files require manual review.");
-      setRecoverable(await api.recoveryAvailable().catch(() => false));
+      const available = await api.recoveryAvailable().catch(() => false);
+      if (current === request.current) setRecoverable(available);
     } finally {
-      setLoading(false);
+      if (current === request.current) setLoading(false);
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+    return () => { ++request.current; };
+  }, []);
 
   async function save() {
-    if (!settings) return;
+    if (!settings || saving) return;
+    const current = ++request.current;
     setSaving(true);
     setError("");
     setSaved(false);
     try {
       const result = await api.updateSettings(settings);
+      if (current !== request.current) return;
       setSettings(result);
+      setDirty(false);
       onChange(result);
       setSaved(true);
     } catch {
+      if (current !== request.current) return;
       setError("Settings could not be saved. Check directory access or an interrupted temporary write. Existing configuration is preserved.");
     } finally {
-      setSaving(false);
+      if (current === request.current) setSaving(false);
     }
   }
 
   async function recover() {
+    if (saving) return;
+    const current = ++request.current;
     setSaving(true);
     setError("");
     try {
       const result = await api.recoverSettings();
+      if (current !== request.current) return;
       setSettings(result);
+      setDirty(false);
       onChange(result);
       setRecoverable(false);
       setConfirmRecovery(false);
       setSaved(true);
     } catch {
+      if (current !== request.current) return;
       setError("Recovery failed. Original settings are preserved. A backup or interrupted temporary file may require manual review before retrying.");
     } finally {
-      setSaving(false);
+      if (current === request.current) setSaving(false);
     }
   }
 
@@ -105,7 +124,9 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
                 aria-label="Compact layout"
                 aria-describedby="compact-description"
                 onChange={event => {
-                  setSettings({ compactLayout: event.target.checked });
+                  const next = { compactLayout: event.target.checked };
+                  setSettings(next);
+                  setDirty(true);
                   setSaved(false);
                 }}
               />
@@ -116,12 +137,12 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
             </span>
           </label>
           <p>
-            <button type="button" disabled={saving} onClick={save}>
+            <button type="button" disabled={saving || !dirty} onClick={save}>
               {saving ? "Saving…" : "Save settings"}
             </button>
-            {" "}<button type="button" disabled={saving} onClick={() => { setSettings({ compactLayout: false }); setSaved(false); }}>Reset preference</button>
+            {" "}<button type="button" disabled={saving} onClick={() => { const next = { compactLayout: false }; setSettings(next); setDirty(true); setSaved(false); }}>Reset preference</button>
           </p>
-          <p>Reset changes the preference above. Save settings to persist it.</p>
+          <p>{dirty ? "Preference has unsaved changes. Save settings to apply it and keep it after restart." : "Save applies the preference across the interface and keeps it after restart."}</p>
         </>
       )}
       {saved && <p role="status">Settings saved locally.</p>}
