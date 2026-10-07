@@ -281,6 +281,8 @@ mod tests {
             "trailing ",
             "path/segment",
             "non-ascii-é",
+            "-leading",
+            "trailing-",
         ] {
             assert!(registry
                 .register(ModuleDescriptor::new(id, "Name", ""))
@@ -289,6 +291,14 @@ mod tests {
         assert!(registry
             .register(ModuleDescriptor::new("valid", " ", ""))
             .is_err());
+        for module in [
+            ModuleDescriptor::new("x".repeat(65), "Name", ""),
+            ModuleDescriptor::new("valid", "é".repeat(65), ""),
+            ModuleDescriptor::new("valid", "Name", "x".repeat(2049)),
+            ModuleDescriptor::new("valid", "Name", "control\0character"),
+        ] {
+            assert!(registry.register(module).is_err());
+        }
         for state in [
             ModuleLifecycle::Planned,
             ModuleLifecycle::Available,

@@ -22,7 +22,7 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .setup(|app| {
             app.manage(ModuleRegistry::roadmap().map_err(std::io::Error::other)?);
             let directory = app.path().app_config_dir()?;
@@ -41,6 +41,10 @@ pub fn run() {
             get_diagnostics,
             get_support_report
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    if result.is_err() {
+        // Startup/runtime errors may contain local paths. Do not dump them.
+        eprintln!("VSA CORE could not run. Review installation and local configuration access.");
+        std::process::exit(1);
+    }
 }

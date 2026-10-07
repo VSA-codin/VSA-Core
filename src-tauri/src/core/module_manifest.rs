@@ -125,6 +125,10 @@ mod tests {
                 "\"schemaVersion\":1,\"permissionPolicy\":{\"network\":\"allow\"}",
             ),
             VALID.replace("\"example\"", "\"../example\""),
+            VALID.replace(
+                "\"id\":\"example\"",
+                "\"id\":\"example\",\"i\\u0064\":\"other\"",
+            ),
             "[1,\"example\",\"Example\",\"Metadata\",\"1.0.0\",\"available\",[]]".into(),
             format!("{VALID} {{}}"),
             "null".into(),

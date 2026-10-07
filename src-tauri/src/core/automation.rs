@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
     deny_unknown_fields
 )]
 pub enum AutomationTrigger {
+    // An empty struct variant preserves strict unknown-field rejection.
     Manual {},
     Interval { every_minutes: u32 },
 }
