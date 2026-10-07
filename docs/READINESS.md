@@ -8,7 +8,7 @@ The window minimum is 1000×650. At this width the 230px sidebar and 60px conten
 
 Remaining native checks: launch on Linux WebKitGTK and Windows WebView2, resize to 1000×650, inspect every page with default and compact spacing, use keyboard-only navigation and the skip link, reveal/hide paths, test 200% text scaling, and check Windows high contrast plus platform screen readers. These require a native observation session; CI compilation and source review cannot substitute for it. Do not mark them passed from a browser preview.
 
-CI now runs frontend build and Rust formatting/check/Clippy/tests on both Linux and Windows without bundling. Existing storage tests exercise replacement, corrupt content preservation, oversized/non-regular rejection, and temporary-file collisions; Unix additionally tests symlink rejection. Windows ACL behavior and native dialogs are not certified by these checks.
+CI now runs frontend build and Rust formatting/check/Clippy/tests on both Linux and Windows without bundling. Existing storage tests exercise replacement, corrupt content preservation, oversized/non-regular rejection, missing-directory defaults, non-directory config rejection, and temporary-file collisions; Unix additionally tests symlink rejection. Windows ACL behavior and native dialogs are not certified by these checks.
 
 ## Corrupted settings recovery
 

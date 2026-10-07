@@ -29,6 +29,15 @@ impl SettingsStore {
         &self.directory
     }
     fn read_bytes(&self) -> Result<Option<Vec<u8>>, &'static str> {
+        // Windows may report a child under a regular file as NotFound rather
+        // than NotADirectory. Check the configured directory before interpreting
+        // a missing settings file as an intentional default.
+        match fs::metadata(&self.directory) {
+            Ok(metadata) if !metadata.is_dir() => return Err("Settings directory unavailable"),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(_) => return Err("Settings directory unavailable"),
+            Ok(_) => {}
+        }
         let path = self.directory.join("settings.json");
         match fs::symlink_metadata(&path) {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -144,6 +153,22 @@ mod tests {
         }
     }
     #[test]
+    fn missing_config_directory_uses_defaults_without_creating_it() {
+        let fixture = Fixture::new();
+        let directory = fixture.0.join("missing-config-directory");
+        let store = SettingsStore::new(directory.clone());
+        assert_eq!(store.load().unwrap(), AppSettings::default());
+        assert_eq!(store.load_state(), SettingsLoadState::Missing);
+        assert!(!store.recovery_available());
+        assert!(!directory.exists());
+        store
+            .save(&AppSettings {
+                compact_layout: true,
+            })
+            .unwrap();
+        assert!(store.load().unwrap().compact_layout);
+    }
+    #[test]
     fn size_limit_accepts_bounded_valid_json_and_rejects_extra_byte_without_mutation() {
         let fixture = Fixture::new();
         let path = fixture.0.join("settings.json");
@@ -212,6 +237,7 @@ mod tests {
         fs::write(&blocker, "preserved").unwrap();
         let store = SettingsStore::new(blocker.clone());
         assert!(store.load().is_err());
+        assert_eq!(store.load_state(), SettingsLoadState::Unavailable);
         assert!(store.save(&AppSettings::default()).is_err());
         assert!(store.recover().is_err());
         assert_eq!(fs::read_to_string(blocker).unwrap(), "preserved");
