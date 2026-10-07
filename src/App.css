@@ -338,3 +338,8 @@ h1 {
     border-right: 0;
   }
 }
+
+body { overflow: auto; }
+button:focus-visible { outline: 2px solid #eeeeee; outline-offset: 3px; }
+.brand-version, .eyebrow, .card-label, .status-card p, .foundation-grid span, .sidebar-footer { color: #a0a0a0; }
+.main-content { overflow-wrap: anywhere; }

@@ -8,7 +8,11 @@ type CoreStatus = {
   runtime: string;
   mode: string;
   privacy: string;
+  totalModules: number;
+  enabledModules: number;
 };
+
+type ModuleDescriptor = { id: string; name: string; description: string; version: string | null; lifecycle: "planned" | "available" | "installed" | "enabled" };
 
 const navigation = [
   "Dashboard",
@@ -20,10 +24,14 @@ const navigation = [
 ];
 
 function App() {
+  const [page, setPage] = useState("Dashboard");
+  const [modules, setModules] = useState<ModuleDescriptor[] | null>(null);
+  const [modulesError, setModulesError] = useState(false);
   const [coreStatus, setCoreStatus] = useState<CoreStatus | null>(null);
   const [coreError, setCoreError] = useState(false);
 
   useEffect(() => {
+    invoke<ModuleDescriptor[]>("get_modules").then(setModules).catch(() => setModulesError(true));
     invoke<CoreStatus>("get_core_status")
       .then((status) => {
         setCoreStatus(status);
@@ -45,15 +53,17 @@ function App() {
           <div>
             <div className="brand-name">{coreStatus?.name ?? "VSA CORE"}</div>
             <div className="brand-version">
-              v{coreStatus?.version ?? "0.1.0"}
+              {coreStatus ? `v${coreStatus.version}` : "Version unavailable"}
             </div>
           </div>
         </div>
 
         <nav className="navigation">
-          {navigation.map((item, index) => (
+          {navigation.map((item) => (
             <button
-              className={`nav-item ${index === 0 ? "active" : ""}`}
+              className={`nav-item ${page === item ? "active" : ""}`}
+              onClick={() => setPage(item)}
+              aria-current={page === item ? "page" : undefined}
               key={item}
               type="button"
             >
@@ -72,7 +82,7 @@ function App() {
         <header className="topbar">
           <div>
             <p className="eyebrow">VSA SOFTWARE ECOSYSTEM</p>
-            <h1>Dashboard</h1>
+            <h1>{page}</h1>
           </div>
 
           <div className="core-status">
@@ -81,6 +91,7 @@ function App() {
           </div>
         </header>
 
+        {page === "Dashboard" && <>
         <section className="hero-card">
           <div>
             <p className="eyebrow">WELCOME TO</p>
@@ -103,7 +114,7 @@ function App() {
             <strong>{isOnline ? "Operational" : coreError ? "Unavailable" : "Starting"}</strong>
             <p>
               {isOnline
-                ? "All local core services are available."
+                ? "The local core status command responded."
                 : coreError
                   ? "The local VSA CORE backend could not be reached."
                   : "Connecting to the local VSA CORE backend."}
@@ -112,14 +123,14 @@ function App() {
 
           <article className="status-card">
             <span className="card-label">PRIVACY</span>
-            <strong>Protected</strong>
+            <strong>Local First</strong>
             <p>No hidden telemetry. Your data stays local.</p>
           </article>
 
           <article className="status-card">
             <span className="card-label">MODULES</span>
-            <strong>0 enabled</strong>
-            <p>Module infrastructure will be added next.</p>
+            <strong>{coreStatus ? `${coreStatus.enabledModules} / ${coreStatus.totalModules} enabled` : "Unavailable"}</strong>
+            <p>Roadmap metadata only; no module execution.</p>
           </article>
         </section>
 
@@ -155,6 +166,17 @@ function App() {
             </div>
           </div>
         </section>
+        </>}
+        {page === "Modules" && <section aria-label="Module registry">
+          <p>Roadmap metadata only. Installation and execution are not implemented yet.</p>
+          {modulesError ? <p role="alert">Module registry unavailable.</p> : modules === null ? <p role="status">Loading modules…</p> : modules.map(module => <article className="panel" key={module.id}>
+            <h2>{module.name}</h2><p>{module.description}</p>
+            <p>Status: {module.lifecycle} · Installed: {module.lifecycle === "installed" || module.lifecycle === "enabled" ? "Yes" : "No"} · Enabled: {module.lifecycle === "enabled" ? "Yes" : "No"}</p>
+            {module.version && <p>Version: {module.version}</p>}
+          </article>)}
+        </section>}
+        {page === "Trust Center" && <section className="panel"><h2>Current foundations</h2><p>Local first. No account required. No telemetry collection implemented.</p><p>Registry: {coreStatus ? `${coreStatus.enabledModules} / ${coreStatus.totalModules} enabled` : "Unavailable"}</p><p>Module execution, sandboxing, encryption, and secret storage: not implemented yet.</p></section>}
+        {["Automation", "Vault", "Settings"].includes(page) && <section className="panel"><h2>{page}</h2><p>Not implemented yet.</p></section>}
       </main>
     </div>
   );
