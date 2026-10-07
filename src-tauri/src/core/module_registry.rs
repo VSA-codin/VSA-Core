@@ -80,6 +80,11 @@ impl ModuleRegistry {
         if self.modules.iter().any(|existing| existing.id == module.id) {
             return Err("Module ID already registered");
         }
+        for (index, permission) in module.declared_permissions.iter().enumerate() {
+            if module.declared_permissions[..index].contains(permission) {
+                return Err("Module permission already declared");
+            }
+        }
         self.modules.push(module);
         Ok(())
     }
@@ -162,6 +167,22 @@ mod tests {
         }
         assert_eq!(registry.enabled_count(), 1);
         assert!(serde_json::from_str::<ModuleLifecycle>("\"unknown\"").is_err());
+    }
+    #[test]
+    fn permission_counts_require_unique_declarations_and_explicit_allow() {
+        let mut registry = ModuleRegistry::new();
+        let mut module = ModuleDescriptor::new("permissions", "Test", "");
+        module.permission_policy =
+            serde_json::from_str(r#"{"network":"allow","clipboard":"allow"}"#).unwrap();
+        module.declared_permissions = vec![Permission::Network, Permission::Network];
+        assert_eq!(
+            registry.register(module.clone()),
+            Err("Module permission already declared")
+        );
+        assert!(registry.modules().is_empty());
+        module.declared_permissions = vec![Permission::Network, Permission::FilesystemRead];
+        registry.register(module).unwrap();
+        assert_eq!(registry.allowed_permission_count(), 1);
     }
     #[test]
     fn roadmap_is_metadata_only() {

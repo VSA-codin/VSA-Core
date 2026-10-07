@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { Modules } from "./pages/Modules";
@@ -25,11 +25,16 @@ const navigation = [
 ];
 
 function App() {
+  const contentRef = useRef<HTMLElement>(null);
   const [settingsError, setSettingsError] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({ compactLayout: false });
   const [page, setPage] = useState("Dashboard");
   const [coreStatus, setCoreStatus] = useState<CoreStatus | null>(null);
   const [coreError, setCoreError] = useState(false);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [page]);
 
   useEffect(() => {
     invoke<AppSettings>("get_settings")
@@ -81,7 +86,7 @@ function App() {
         </div>
       </aside>
 
-      <main className="main-content">
+      <main className="main-content" ref={contentRef}>
         <header className="topbar">
           <div>
             <p className="eyebrow">VSA SOFTWARE ECOSYSTEM</p>

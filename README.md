@@ -12,13 +12,13 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 - No forced VSA account
 - No hidden telemetry
 - Secrets stay local
-- Optional telemetry and crash reporting
+- No telemetry or crash reporting implemented
 - Windows 10 / Windows 11 / Linux support
 - Modular architecture
-- Every optional module can be disabled
+- Planned: independently disableable optional modules
 - Self-hostable where applicable
 - Transparent permissions
-- Reproducible and verifiable releases
+- Planned: reproducible and verifiable releases
 
 ## Technology
 

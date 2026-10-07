@@ -10,7 +10,7 @@ Current assets are local settings integrity, truthful registry metadata, UI trus
 | Over-permissioned module | Typed declarations; missing and undeclared permissions denied by logical policy | No OS enforcement exists; future grants need scoped resources and explicit consent |
 | Compromised dependency / supply-chain attack | Lockfiles, existing CI/security checks; no bulk updates | Dependencies and build tools execute with developer privileges; review provenance and releases |
 | Secret leakage | Settings schema has no secret fields and rejects unknown fields; no secret features | Never introduce credentials into settings; future Vault requires independent architecture review |
-| Log leakage | No application logging or support bundle | Future logging requires redaction tests and retention policy; diagnostics paths identify local users |
+| Log leakage | No application logging or support bundle | Future logging requires redaction tests and retention policy; diagnostics paths can identify local users when explicitly revealed |
 | Unsafe filesystem access | Fixed app-specific filename, Tauri-resolved config location, bounded reads, regular-file checks, exclusive temporary creation | Same-user TOCTOU races, parent-directory symlinks, ACLs, concurrent processes, and unusual filesystem semantics remain risks |
 | Corrupted local configuration | Invalid content is reported and preserved; missing files use defaults; save refuses corrupt targets | Manual recovery required; no backup/repair tool; parent directory is not synced for power-loss durability |
 | Command execution | No module or shell execution commands | Review any future process launch, arguments, privilege boundary, and sandbox |
@@ -26,7 +26,7 @@ The known moderate glib 0.18.x alert in the GTK/WebKit/Tauri Linux stack is an u
 
 Linux automated tests do not establish Windows runtime behavior. Native Windows testing, especially rename replacement and inherited directory permissions, is required before release. No reproducible release, production signing, or installer pipeline is claimed.
 
-Local diagnostics intentionally displays config/data locations. It never enumerates unrelated files or full environment values. There is no export or transmission mechanism. Users should review paths before sharing screenshots.
+Local diagnostics hides config/data locations by default and allows explicit local reveal. It never enumerates unrelated files or full environment values. There is no export or transmission mechanism. Users should review paths before sharing screenshots.
 
 ## Future review gates
 

@@ -8,6 +8,7 @@ type Diagnostics = {
   totalModules: number; enabledModules: number; allowedPermissions: number;
 };
 export function TrustCenter() {
+  const [showPaths, setShowPaths] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -24,7 +25,7 @@ export function TrustCenter() {
     ["Account required", diagnostics.accountRequired ? "Yes" : "No"],
     ["Version", diagnostics.version], ["Runtime", diagnostics.runtime],
     ["Platform", `${diagnostics.platform} / ${diagnostics.architecture}`], ["Build", diagnostics.buildMode],
-    ["Config directory", diagnostics.configDirectory], ["Data directory (may not exist yet)", diagnostics.dataDirectory],
+    ["Config directory", showPaths ? diagnostics.configDirectory : "Hidden for privacy"], ["Data directory (may not exist yet)", showPaths ? diagnostics.dataDirectory : "Hidden for privacy"],
     ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
     ["Enabled / total modules", `${diagnostics.enabledModules} / ${diagnostics.totalModules}`],
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
@@ -33,6 +34,9 @@ export function TrustCenter() {
     <section className="panel">
       <h2>Local diagnostics</h2>
       <p>This information stays in this view. Directory paths can identify your local user; review before sharing a screenshot.</p>
+      <button type="button" aria-pressed={showPaths} onClick={() => setShowPaths(value => !value)}>
+        {showPaths ? "Hide local paths" : "Show local paths"}
+      </button>
       <dl className="diagnostics">
         {rows.map(([label, value]) => (
           <div key={label}>
@@ -42,7 +46,7 @@ export function TrustCenter() {
         ))}
       </dl>
       <h2>Permission foundation</h2>
-      <p>Implemented: declared permission metadata and deny by default policy. No grants or module execution are exposed.</p>
+      <p>Implemented: declared permission metadata and deny by default policy. No grants or module execution are exposed. This logical policy model is not an OS sandbox.</p>
       <p>Planned: reviewed module permissions and execution isolation.</p>
       <p>Not implemented yet: OS sandbox, Vault, encryption, updater, module installation, and log collection.</p>
     </section>

@@ -4,13 +4,13 @@ VSA CORE is a GPL-3.0-only local desktop foundation using Tauri 2, Rust, React, 
 
 ## Frontend and IPC
 
-`src/App.tsx` owns simple in-memory navigation and the dashboard. `src/pages` contains Modules, Settings, and Trust Center. React uses Tauri invoke commands; it has no direct filesystem access. Automation and Vault are honest placeholders. Compact layout is the only saved preference and changes actual layout spacing. Each backend view has loading and error states. Browser-only previews cannot reach Rust and show unavailable states.
+`src/App.tsx` owns simple in-memory navigation and the dashboard. `src/pages` contains Modules, Settings, and Trust Center. React uses Tauri invoke commands; it has no direct filesystem access. Automation and Vault are honest placeholders. Compact layout is the only saved preference and changes actual layout spacing. Each backend view has loading and error states. Page changes reset the content scroll position; the sidebar stays fixed and the content header is sticky. Module rows expose lifecycle and permission details through keyboard-accessible disclosures. Browser-only previews cannot reach Rust and show unavailable states.
 
-Commands are `get_core_status`, `get_modules`, `get_settings`, `update_settings`, and `get_diagnostics`. The Rust command layer maps lock and storage failures to safe messages without underlying OS errors or paths. Diagnostics deliberately exposes application locations only in its local view. Managed registry and settings state use separate mutexes; diagnostics locks registry then settings. No code takes the reverse order. Poisoned locks return errors; they are not silently recovered.
+Commands are `get_core_status`, `get_modules`, `get_settings`, `update_settings`, and `get_diagnostics`. The Rust command layer maps lock and storage failures to safe messages without underlying OS errors or paths. Diagnostics returns application locations locally; the view hides paths until the user explicitly reveals them. Managed registry and settings state use separate mutexes; diagnostics locks registry then settings. No code takes the reverse order. Poisoned locks return errors; they are not silently recovered.
 
 ## Registry and lifecycle
 
-`core/module_registry.rs` stores descriptors in registration order, rejects blank and duplicate IDs, and counts only Enabled entries. Lifecycle is a serialized enum: Planned, Available, Installed, Enabled. Enabled implies installed by its meaning; independent booleans cannot contradict one another. There is no transition or installation API yet. Versions are optional; planned entries have none.
+`core/module_registry.rs` stores descriptors in registration order, rejects blank and duplicate IDs and repeated permission declarations, and counts only Enabled entries. Lifecycle is a serialized enum: Planned, Available, Installed, Enabled. Enabled implies installed by its meaning; independent booleans cannot contradict one another. There is no transition or installation API yet. Versions are optional; planned entries have none.
 
 The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA ASF, VSA StreamDropCollector, and VSA R4R + SDA. All are Planned. No product features are implemented. Registry mutation is internal only; there is no registration IPC command.
 
@@ -20,7 +20,7 @@ The four built-in descriptors are roadmap metadata for Steam Power Suite, VSA AS
 
 `commands/settings.rs` delegates to `services::SettingsService`, which delegates to `storage::SettingsStore`. Tauri resolves the application config directory at startup, without hardcoded user paths. Missing settings yield defaults without writing. Invalid JSON, oversized files, non-regular files, and symlinks are rejected and preserved. The frontend may use default layout if startup reading fails; Settings and Trust Center expose the storage error.
 
-Writes are serialized by the service mutex, encode to a same-directory temporary file opened with create_new, sync the file, close it, then rename over settings.json. Unix temporary files use mode 0600. Existing temporary files are never overwritten; an interrupted write requires manual review and recovery. Failed writes leave the prior target intact under normal filesystem semantics. No automatic corruption repair is attempted.
+Writes are serialized by the service mutex, encode to a same-directory temporary file opened with create_new, sync the file, close it, then rename over settings.json. Unix temporary files use mode 0600. Existing temporary files are never overwritten; an interrupted write requires manual review and recovery. Failed writes leave the prior target intact under normal filesystem semantics. No automatic corruption repair is attempted. Settings offers a read-only retry after manual repair; back up settings.json before changing it.
 
 This is a single-process persistence foundation. Cross-process coordination and hostile same-user filesystem races are not solved. Atomic rename is filesystem-dependent; parent-directory power-loss durability is not guaranteed. Windows ACLs are inherited from the application directory. Application data location is reported separately and need not exist yet.
 
@@ -30,7 +30,7 @@ This is a single-process persistence foundation. Cross-process coordination and 
 
 ## Diagnostics
 
-`SettingsService` reads storage availability and constructs the `core/diagnostics.rs` snapshot without putting filesystem access in the domain model. The narrow snapshot contains: version, OS, architecture, runtime, build mode, local-first/account/telemetry facts, application locations, storage readability, registry status/counts, and allowed declared permission count. No environment dump, personal-file enumeration, logger, export, network sink, or support bundle exists. Storage readability does not claim successful writes. Paths can identify a local user and should be reviewed before sharing screenshots.
+`SettingsService` reads storage availability and constructs the `core/diagnostics.rs` snapshot without putting filesystem access in the domain model. The narrow snapshot contains: version, OS, architecture, runtime, build mode, local-first/account/telemetry facts, application locations, storage readability, registry status/counts, and allowed declared permission count. No environment dump, personal-file enumeration, logger, export, network sink, or support bundle exists. Storage readability does not claim successful writes. Paths are hidden in the view by default, can be explicitly revealed, and should be reviewed before sharing screenshots.
 
 ## Security configuration and unfinished systems
 

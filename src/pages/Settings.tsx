@@ -9,11 +9,16 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    invoke<AppSettings>("get_settings")
-      .then(setSettings)
-      .catch(() => setError("Settings cannot be loaded. Existing files are preserved; inspect local configuration for recovery."));
-  }, []);
+  async function load() {
+    setError("");
+    try {
+      setSettings(await invoke<AppSettings>("get_settings"));
+    } catch {
+      setError("Settings cannot be loaded. Existing files are preserved. Back up settings.json before repairing it in the application config directory, then retry.");
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
 
   async function save() {
     if (!settings) return;
@@ -37,13 +42,14 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
       <h2>Local settings</h2>
       <p>Stored on this device. No secrets or telemetry configuration.</p>
       {error && <p role="alert">{error}</p>}
+      {!settings && error && <button type="button" onClick={load}>Retry loading settings</button>}
       {!settings && !error && <p role="status">Loading settings…</p>}
       {settings && (
         <>
           <label className={`setting-toggle ${saving ? "disabled" : ""}`}>
             <span className="setting-toggle-copy">
               <strong>Compact layout</strong>
-              <small>Use tighter spacing across the VSA CORE interface.</small>
+              <small id="compact-description">Use tighter spacing across the VSA CORE interface.</small>
             </span>
 
             <span className="setting-toggle-action">
@@ -57,6 +63,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
                 checked={settings.compactLayout}
                 disabled={saving}
                 aria-label="Compact layout"
+                aria-describedby="compact-description"
                 onChange={event => {
                   setSettings({ compactLayout: event.target.checked });
                   setSaved(false);
