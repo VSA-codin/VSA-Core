@@ -14,12 +14,15 @@ export type CoreStatus = {
 
 export type Permission = "network" | "filesystem.read" | "filesystem.write" | "process.execute" | "notifications" | "secrets.read" | "clipboard";
 
+export const moduleLifecycles = ["planned", "available", "installed", "enabled"] as const;
+export type ModuleLifecycle = typeof moduleLifecycles[number];
+
 export type ModuleDescriptor = {
   id: string;
   name: string;
   description: string;
   version: string | null;
-  lifecycle: "planned" | "available" | "installed" | "enabled";
+  lifecycle: ModuleLifecycle;
   declaredPermissions: Permission[];
   permissionPolicy: Partial<Record<Permission, "allow" | "deny">>;
 };

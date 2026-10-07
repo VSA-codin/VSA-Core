@@ -23,3 +23,5 @@ The default diagnostics response contains null config/data locations. Only “Sh
 ## Async and failure states
 
 Read-only views share stale-request guards and safe Retry actions. Settings reads, writes, recovery, path reveal, and support preview ignore results after their page unmounts. Compact-layout edits update the form immediately; Save applies and persists them. Unsaved changes are labeled and discarded when leaving Settings. Navigation is temporarily disabled during Save/recovery so completion cannot leave the shell with a stale preference. Native keyboard focus, announcement timing, and layout at high text zoom still require observation. Development Strict Mode can dispatch two mount reads; stale results are discarded, and no effect performs writes.
+
+Module search and lifecycle filters use labeled native controls, a result-count status, an explicit Clear filters action, and a distinct no-match state. Native keyboard/focus and high-contrast behavior of these controls remains part of the interactive checklist above.

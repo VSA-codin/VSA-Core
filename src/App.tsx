@@ -15,7 +15,8 @@ const navigation = [
   "Vault",
   "Trust Center",
   "Settings",
-];
+] as const;
+type Page = typeof navigation[number];
 
 function App() {
   const settingsRevision = useRef(0);
@@ -23,7 +24,7 @@ function App() {
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({ compactLayout: false });
-  const [page, setPage] = useState("Dashboard");
+  const [page, setPage] = useState<Page>("Dashboard");
   const { data: coreStatus, error: coreError, reload: reloadCore } = useLocalResource(api.getCoreStatus);
 
   useEffect(() => {
