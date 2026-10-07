@@ -80,6 +80,65 @@ impl Diagnostics {
 mod tests {
     use super::*;
     #[test]
+    fn snapshot_serialization_exposes_only_reviewed_fields_and_real_build_mode() {
+        let path = std::path::Path::new("private-user-Żółć");
+        for (state, encoded) in [
+            (SettingsLoadState::Missing, "missing"),
+            (SettingsLoadState::Loaded, "loaded"),
+            (SettingsLoadState::Invalid, "invalid"),
+            (SettingsLoadState::Unavailable, "unavailable"),
+        ] {
+            let value = serde_json::to_value(Diagnostics::current(
+                &ModuleRegistry::roadmap().unwrap(),
+                path,
+                path,
+                state,
+                false,
+            ))
+            .unwrap();
+            let mut keys: Vec<_> = value
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect();
+            keys.sort_unstable();
+            let mut expected = vec![
+                "version",
+                "platform",
+                "architecture",
+                "runtime",
+                "buildMode",
+                "localFirst",
+                "telemetryImplemented",
+                "accountRequired",
+                "configDirectory",
+                "dataDirectory",
+                "settingsLoadState",
+                "storageStatus",
+                "registryStatus",
+                "totalModules",
+                "enabledModules",
+                "allowedPermissions",
+            ];
+            expected.sort_unstable();
+            assert_eq!(keys, expected);
+            assert_eq!(value["settingsLoadState"], encoded);
+            assert_eq!(
+                value["buildMode"],
+                if cfg!(debug_assertions) {
+                    "debug"
+                } else {
+                    "release"
+                }
+            );
+            assert_eq!(value["version"], env!("CARGO_PKG_VERSION"));
+            assert!(!serde_json::to_string(&value)
+                .unwrap()
+                .contains("private-user"));
+        }
+    }
+    #[test]
     fn support_report_is_deterministic_and_never_includes_revealed_paths() {
         let registry = ModuleRegistry::roadmap().unwrap();
         let private = std::path::Path::new("private-user-Żółć-token-fixture");

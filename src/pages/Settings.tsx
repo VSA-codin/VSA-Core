@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type AppSettings } from "../services/api";
 
-export function Settings({ onChange }: { onChange: (settings: AppSettings) => void }) {
+export function Settings({ onChange, onBusyChange }: {
+  onChange: (settings: AppSettings) => void;
+  onBusyChange: (busy: boolean) => void;
+}) {
   const request = useRef(0);
   const [dirty, setDirty] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -37,13 +40,14 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
 
   useEffect(() => {
     void load();
-    return () => { ++request.current; };
-  }, []);
+    return () => { ++request.current; onBusyChange(false); };
+  }, [onBusyChange]);
 
   async function save() {
     if (!settings || saving) return;
     const current = ++request.current;
     setSaving(true);
+    onBusyChange(true);
     setError("");
     setSaved(false);
     try {
@@ -57,7 +61,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
       if (current !== request.current) return;
       setError("Settings could not be saved. Check directory access or an interrupted temporary write. Existing configuration is preserved.");
     } finally {
-      if (current === request.current) setSaving(false);
+      if (current === request.current) { setSaving(false); onBusyChange(false); }
     }
   }
 
@@ -65,6 +69,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
     if (saving) return;
     const current = ++request.current;
     setSaving(true);
+    onBusyChange(true);
     setError("");
     try {
       const result = await api.recoverSettings();
@@ -79,7 +84,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
       if (current !== request.current) return;
       setError("Recovery failed. Original settings are preserved. A backup or interrupted temporary file may require manual review before retrying.");
     } finally {
-      if (current === request.current) setSaving(false);
+      if (current === request.current) { setSaving(false); onBusyChange(false); }
     }
   }
 
@@ -103,6 +108,7 @@ export function Settings({ onChange }: { onChange: (settings: AppSettings) => vo
         </div>
       )}
       {loading && <p role="status">Loading settings…</p>}
+      {saving && <p role="status">Writing local settings. Navigation resumes when the operation finishes.</p>}
       {settings && (
         <>
           <label className={`setting-toggle ${saving ? "disabled" : ""}`}>

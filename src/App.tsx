@@ -20,6 +20,7 @@ const navigation = [
 function App() {
   const settingsRevision = useRef(0);
   const contentRef = useRef<HTMLElement>(null);
+  const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({ compactLayout: false });
   const [page, setPage] = useState("Dashboard");
@@ -60,6 +61,7 @@ function App() {
             <button
               className={`nav-item ${page === item ? "active" : ""}`}
               onClick={() => setPage(item)}
+              disabled={settingsBusy && page !== item}
               aria-current={page === item ? "page" : undefined}
               key={item}
               type="button"
@@ -102,7 +104,7 @@ function App() {
               : "Future secret storage requires a separately reviewed protection and recovery design. No secrets are stored or protected by this application today."}</p>
           </section>
         )}
-        {page === "Settings" && <Settings onChange={value => { ++settingsRevision.current; setSettings(value); setSettingsError(false); }} />}
+        {page === "Settings" && <Settings onBusyChange={setSettingsBusy} onChange={value => { ++settingsRevision.current; setSettings(value); setSettingsError(false); }} />}
       </main>
     </div>
   );

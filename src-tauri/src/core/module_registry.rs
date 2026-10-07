@@ -143,6 +143,33 @@ impl ModuleRegistry {
 mod tests {
     use super::*;
     #[test]
+    fn larger_registry_retains_order_counts_and_contents_after_invalid_registration() {
+        let mut registry = ModuleRegistry::new();
+        for index in 0..128 {
+            let mut module = ModuleDescriptor::new(format!("module-{index}"), "Metadata", "");
+            if index % 3 == 0 {
+                module.lifecycle = ModuleLifecycle::Enabled;
+                module.version = Some("1.0.0".into());
+            }
+            registry.register(module).unwrap();
+        }
+        let before = serde_json::to_value(registry.modules()).unwrap();
+        let enabled = registry.enabled_count();
+        assert_eq!(enabled, 43);
+        for module in [
+            ModuleDescriptor::new("module-64", "Duplicate", ""),
+            ModuleDescriptor::new("bad/id", "Malformed", ""),
+        ] {
+            assert!(registry.register(module).is_err());
+            assert_eq!(registry.enabled_count(), enabled);
+            assert_eq!(serde_json::to_value(registry.modules()).unwrap(), before);
+        }
+        for (index, module) in registry.modules().iter().enumerate() {
+            assert_eq!(module.id, format!("module-{index}"));
+        }
+        assert_eq!(registry.allowed_permission_count(), 0);
+    }
+    #[test]
     fn registration_preserves_order_and_rejects_duplicate_without_mutation() {
         let mut registry = ModuleRegistry::new();
         registry

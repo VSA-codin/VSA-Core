@@ -17,7 +17,7 @@ export function TrustCenter() {
     setPathsError(false);
     if (showPaths) {
       setShowPaths(false);
-      setRevealed(null);
+      setRevealed(value => value && ({ ...value, configDirectory: null, dataDirectory: null }));
       return;
     }
     setPathsLoading(true);
@@ -34,7 +34,7 @@ export function TrustCenter() {
   }
 
   if (error) return <div><p role="alert">Local diagnostics unavailable.</p><button type="button" onClick={() => void reload()}>Retry diagnostics</button></div>;
-  const diagnostics = showPaths ? revealed : snapshot;
+  const diagnostics = revealed ?? snapshot;
   if (!diagnostics) return <p role="status">Loading local diagnostics…</p>;
   const rows: [string, string][] = [
     ["Local first", diagnostics.localFirst ? "Implemented: local IPC and settings" : "Unavailable"],
@@ -51,7 +51,7 @@ export function TrustCenter() {
     <section className="panel">
       <h2>Implemented</h2>
       <h3>Local diagnostics</h3>
-      <p>This information stays in this view. Directory paths can identify your local user; review before sharing a screenshot.</p>
+      <p>Diagnostics are generated locally. Directory paths can identify your local user; review before sharing a screenshot.</p>
       <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
         {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
       </button>
