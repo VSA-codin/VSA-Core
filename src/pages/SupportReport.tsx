@@ -6,6 +6,7 @@ export function SupportReport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const request = useRef(0);
+  const previewButton = useRef<HTMLButtonElement>(null);
   useEffect(() => () => { ++request.current; }, []);
 
   async function preview() {
@@ -26,8 +27,8 @@ export function SupportReport() {
   return (
     <section className="panel" aria-labelledby="support-report-title">
       <div className="panel-heading"><h2 id="support-report-title">Support Report</h2><span className="development-badge">Local only</span></div>
-      <p>Includes version, platform, architecture, runtime, build mode, local-first/account/telemetry facts, settings read status, module counts, and permission limitations. Paths and file contents are excluded, even when paths are revealed in Trust Center. Nothing is uploaded or saved automatically.</p>
-      <button type="button" disabled={loading} onClick={() => void preview()}>
+      <p>Includes version, platform, runtime, settings health and registry counts. Excludes paths, settings contents and module descriptions, even after path reveal in Trust Center. Nothing is uploaded or saved automatically.</p>
+      <button ref={previewButton} type="button" disabled={loading} onClick={() => void preview()}>
         {loading ? "Preparing report…" : report ? "Refresh report preview" : "Preview sanitized report"}
       </button>
       {loading && <p role="status">Reading local diagnostics…</p>}
@@ -37,7 +38,7 @@ export function SupportReport() {
           <p role="status">Report ready. Review the text before sharing it manually.</p>
           <label htmlFor="support-report">Sanitized report text</label>
           <textarea id="support-report" className="support-report" readOnly value={report} rows={18} spellCheck={false} />
-          <button type="button" onClick={() => setReport(null)}>Hide report preview</button>
+          <button type="button" onClick={() => { setReport(null); previewButton.current?.focus(); }}>Hide report preview</button>
         </>
       )}
     </section>

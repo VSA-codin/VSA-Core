@@ -32,10 +32,8 @@ export function TrustCenter() {
     }
   }
 
-  if (error) return <div><p role="alert">Local diagnostics unavailable.</p><button type="button" onClick={() => void reload()}>Retry diagnostics</button></div>;
   const diagnostics = revealed ?? snapshot;
-  if (!diagnostics) return <p role="status">Loading local diagnostics…</p>;
-  const rows: [string, string][] = [
+  const rows: [string, string][] = diagnostics ? [
     ["Local First", diagnostics.localFirst ? "Implemented: local IPC and settings" : "Unavailable"],
     ["Telemetry collection", diagnostics.telemetryImplemented ? "Implemented" : "Not implemented; no collection"],
     ["Account required", diagnostics.accountRequired ? "Yes" : "No"],
@@ -45,7 +43,7 @@ export function TrustCenter() {
     ["Settings load state", ({ missing: "Missing · defaults in use", loaded: "Loaded", invalid: "Invalid · original preserved", unavailable: "Unavailable or unsafe" } as const)[diagnostics.settingsLoadState]], ["Settings storage", diagnostics.storageStatus], ["Registry", diagnostics.registryStatus],
     ["Enabled / total modules", `${diagnostics.enabledModules} / ${diagnostics.totalModules}`],
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
-  ];
+  ] : [];
   return (
     <section aria-label="Trust Center">
       <p className="page-intro">A factual view of this foundation: what exists, what the local core reports, and where its boundaries end.</p>
@@ -57,6 +55,8 @@ export function TrustCenter() {
       </div>
       <section className="trust-section" aria-labelledby="diagnostics-title">
         <div className="panel-heading"><h2 id="diagnostics-title">Current status</h2><span className="development-badge">Local diagnostics</span></div>
+        {error ? <div className="notice"><p role="alert">Local diagnostics unavailable.</p><button type="button" onClick={() => void reload()}>Retry diagnostics</button></div>
+          : !diagnostics ? <p role="status">Loading local diagnostics…</p> : <>
         <p>Paths are hidden by default. Revealed paths may identify your user in screenshots; Support Report always excludes them.</p>
         <button type="button" aria-pressed={showPaths} disabled={pathsLoading} onClick={() => void togglePaths()}>
           {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
@@ -65,6 +65,7 @@ export function TrustCenter() {
         <dl className="diagnostics">
           {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
         </dl>
+        </>}
       </section>
       <section className="trust-section" aria-labelledby="not-implemented-title">
         <h2 id="not-implemented-title">Not implemented</h2>

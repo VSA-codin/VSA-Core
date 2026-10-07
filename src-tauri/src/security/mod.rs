@@ -75,6 +75,7 @@ mod tests {
         for input in [
             r#"{"network":"deny","network":"allow"}"#,
             r#"{"network":"allow","network":"deny"}"#,
+            r#"{"network":"deny","net\u0077ork":"allow"}"#,
             r#"{"unknown":"allow"}"#,
             r#"{"network":true}"#,
             r#"{"network":"unknown"}"#,
@@ -86,6 +87,29 @@ mod tests {
                 "{input}"
             );
         }
+    }
+    #[test]
+    fn policy_serialization_order_is_stable_and_revoked_declarations_deny() {
+        let first: PermissionPolicy = serde_json::from_str(
+            r#"{"network":"allow","clipboard":"deny","filesystem.read":"allow"}"#,
+        )
+        .unwrap();
+        let second: PermissionPolicy = serde_json::from_str(
+            r#"{"filesystem.read":"allow","clipboard":"deny","network":"allow"}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_vec(&first).unwrap(),
+            serde_json::to_vec(&second).unwrap()
+        );
+        assert_eq!(
+            first.decision(Permission::Network, &[Permission::Network]),
+            PermissionDecision::Allow
+        );
+        assert_eq!(
+            first.decision(Permission::Network, &[Permission::FilesystemRead]),
+            PermissionDecision::Deny
+        );
     }
     #[test]
     fn every_permission_requires_declaration_and_explicit_allow() {

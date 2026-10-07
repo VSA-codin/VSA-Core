@@ -31,4 +31,4 @@ The desktop polish pass adds decorative local SVG navigation icons, a compact se
 
 ## Review of minimum privileges
 
-The frontend uses `@tauri-apps/api/core` only for application IPC; it does not call built-in event, path, window, resource or image commands. The capability now has an empty built-in permission list. Build/check tests accept the generated capability, but a native smoke test must still verify all eight app commands before release. No plugin, account, process or network permission was introduced.
+The frontend uses `@tauri-apps/api/core` only for application IPC; it does not call built-in event, path, window, resource or image commands. The capability grants only an application permission listing the eight foundation commands; no built-in plugin permissions or remote origins are allowed. The application manifest enables custom-command ACL enforcement. Build/check tests accept the generated capability, but a native smoke test must still verify all eight app commands before release. No plugin, account, process or network permission was introduced.

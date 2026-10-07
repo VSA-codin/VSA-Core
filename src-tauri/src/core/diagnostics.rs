@@ -80,6 +80,40 @@ impl Diagnostics {
 mod tests {
     use super::*;
     #[test]
+    fn support_report_excludes_module_metadata_and_counts_only_effective_permissions() {
+        use crate::core::module_registry::ModuleDescriptor;
+        use crate::security::{Permission, PermissionPolicy};
+        let mut registry = ModuleRegistry::new();
+        let mut module = ModuleDescriptor::new(
+            "private-module-marker",
+            "PRIVATE_NAME_MARKER",
+            "PRIVATE_DESCRIPTION_MARKER",
+        );
+        module.declared_permissions = vec![Permission::Network];
+        module.permission_policy =
+            serde_json::from_str::<PermissionPolicy>(r#"{"network":"deny","clipboard":"allow"}"#)
+                .unwrap();
+        registry.register(module).unwrap();
+        let diagnostics = Diagnostics::current(
+            &registry,
+            std::path::Path::new("PRIVATE_PATH_MARKER"),
+            std::path::Path::new("PRIVATE_PATH_MARKER"),
+            SettingsLoadState::Loaded,
+            true,
+        );
+        let report = diagnostics.support_report();
+        for excluded in [
+            "private-module-marker",
+            "PRIVATE_NAME_MARKER",
+            "PRIVATE_DESCRIPTION_MARKER",
+            "PRIVATE_PATH_MARKER",
+        ] {
+            assert!(!report.contains(excluded));
+        }
+        assert!(report.contains("Modules: 1 total, 0 enabled"));
+        assert!(report.contains("Allowed declared permissions: 0"));
+    }
+    #[test]
     fn snapshot_serialization_exposes_only_reviewed_fields_and_real_build_mode() {
         let path = std::path::Path::new("private-user-Żółć");
         for (state, encoded) in [

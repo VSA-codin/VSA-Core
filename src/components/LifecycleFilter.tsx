@@ -69,7 +69,8 @@ export function LifecycleFilter({ value, onChange }: {
         <span id={`${id}-value`}>{lifecycleLabels[value]}</span><span aria-hidden="true">⌄</span>
       </button>
       {open && <div ref={list} id={`${id}-list`} className="select-list" role="listbox" tabIndex={0}
-        aria-labelledby={`${id}-label`} aria-activedescendant={`${id}-option-${active}`} onKeyDown={navigate}>
+        aria-labelledby={`${id}-label`} aria-activedescendant={`${id}-option-${active}`} onKeyDown={navigate}
+        onBlur={() => setOpen(false)}>
         {choices.map((choice, index) => <div key={choice} id={`${id}-option-${index}`} role="option"
           aria-selected={choice === value} className={`select-option ${active === index ? "highlighted" : ""}`}
           onPointerMove={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>

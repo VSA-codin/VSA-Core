@@ -125,6 +125,7 @@ export function Settings({ onChange, onBusyChange }: {
               <input
                 className="switch-input"
                 type="checkbox"
+                role="switch"
                 checked={settings.compactLayout}
                 disabled={saving}
                 aria-label="Compact layout"

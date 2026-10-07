@@ -77,7 +77,7 @@ function App() {
 
         <div className="sidebar-footer">
           {coreStatus && !coreError && <span className="status-dot" />}
-          {coreError ? "Core unavailable" : coreStatus ? `${coreStatus.mode} mode` : "Connecting..."}
+          {coreError ? "Core unavailable" : coreStatus ? `${coreStatus.mode} mode` : "Connecting…"}
         </div>
       </aside>
 
@@ -85,12 +85,12 @@ function App() {
         <header className="topbar">
           <div>
             <p className="eyebrow">LOCAL WORKSPACE</p>
-            <h1 id="page-title">{page}</h1>
+            <h1 id="page-title" aria-live="polite">{page}</h1>
           </div>
 
-          <div className="core-status">
+          <div className="core-status" role="status">
             {isOnline && <span className="status-dot" />}
-            {coreError ? "Core unavailable" : isOnline ? "Core responding" : "Connecting..."}
+            {coreError ? "Core unavailable" : isOnline ? "Core responding" : "Connecting…"}
           </div>
         </header>
 
