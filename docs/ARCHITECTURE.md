@@ -43,3 +43,9 @@ Future permission enforcement, schema evolution, profiles, Vault, update securit
 IPC responses are typed at the trusted local Rust boundary; the frontend does not claim runtime validation of arbitrary remote JSON. Current errors are fixed, safe messages rather than OS details. A structured error taxonomy should be introduced when commands require richer programmatic recovery decisions; the load-state enum and explicit recovery eligibility cover current UI decisions.
 
 The SDK also exports validated inert automation plans and Manual/Interval trigger metadata. Plans are always disabled; there is no action registry, persistence, scheduling, or execution. [Local data design](LOCAL_DATA_DESIGN.md) records future operational gates; the [ecosystem roadmap](ECOSYSTEM_ROADMAP.md) separates planned product boundaries from implemented CORE contracts.
+
+## Extended inert foundations
+
+The experimental SDK exports pure `core/foundation` contracts for profiles, Vault references, signature shape/trust states, local catalog previews, numeric versions, updater review/rollback and network policy dry runs. Automation adds UTC next-run/retry/history previews. These modules have no I/O or authority; no new IPC command, executable or plugin is introduced. The eight command ACL and exact custom titlebar window permissions remain unchanged.
+
+Settings serialize schema v1 with safe legacy reads and unsupported-version recovery refusal. Explicit support preview includes an allowlisted attachment-free JSON manifest. UI explains architecture review gates without inventing installed profiles, trusted signatures, running workflows or update availability. See [Foundation contracts](FOUNDATION_CONTRACTS.md) and [Settings storage](SETTINGS_STORAGE.md).

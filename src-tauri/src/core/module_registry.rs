@@ -43,6 +43,8 @@ pub struct ModuleDescriptor {
     pub id: String,
     pub name: String,
     pub version: Option<String>,
+    pub required_core_api: Option<super::foundation::version::ReleaseVersion>,
+    pub publisher_id: Option<String>,
     pub description: String,
     pub lifecycle: ModuleLifecycle,
     pub declared_permissions: Vec<Permission>,
@@ -59,6 +61,8 @@ impl ModuleDescriptor {
             id: id.into(),
             name: name.into(),
             version: None,
+            required_core_api: None,
+            publisher_id: None,
             description: description.into(),
             lifecycle: ModuleLifecycle::Planned,
             declared_permissions: Vec::new(),
@@ -91,6 +95,12 @@ impl ModuleDescriptor {
                 return Err("Module version must not be blank")
             }
             _ => {}
+        }
+        if let Some(version) = &self.version {
+            super::foundation::version::ReleaseVersion::parse(version)?;
+        }
+        if let Some(publisher) = &self.publisher_id {
+            validate_identifier(publisher)?;
         }
         for (index, permission) in self.declared_permissions.iter().enumerate() {
             if self.declared_permissions[..index].contains(permission) {

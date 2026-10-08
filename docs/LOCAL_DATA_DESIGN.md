@@ -1,20 +1,14 @@
 # Local data and future operational boundaries
 
-This document records design decisions and review gates. Current persistence is one small settings JSON file and explicit corruption backups. There is no database, profile manager, backup archive, Vault, updater, scheduler runtime, network listener, or local audit log.
+This document records design decisions and review gates. Current persistence is one small versioned settings JSON file and explicit corruption backups. The [foundation contracts](FOUNDATION_CONTRACTS.md) and [automation contract](AUTOMATION.md) remain inert and nonpersistent. There is no database, profile manager, backup archive, Vault, updater, scheduler runtime, network listener, or local audit log.
 
 ## Automation and scheduling
 
-The experimental Rust SDK provides `AutomationPlan` and `AutomationTrigger`. A plan contains bounded identity/name metadata, a module ID, a module-defined action ID, and a Manual or Interval trigger. IDs use the same restricted identity grammar as modules. Intervals are integer minutes from 1 through 10,080 (7 days). Trigger JSON rejects unknown/duplicate fields and variants. Plans can only be constructed through validation and always serialize `enabled: false`.
-
-Plans contain no command string, executable path, arbitrary arguments, URL, or secret. They are not persisted, exposed through IPC, or consumed by a timer/dispatcher. They do not prove that a module/action exists. They have no last-run result because nothing runs. The Automation view remains a factual placeholder.
-
-A future action registry must verify module identity, compatibility, installed state, action availability, declarations, explicit consent, and resource scopes before dispatch. A plan must never grant permissions. Review cancellation, concurrency, stale references, failure reporting, and bounded history. Default all new workflows to disabled.
-
-The interval contract is relative duration metadata, not calendar time. Before runtime scheduling, define monotonic timing while running, sleep/restart behavior, missed-run policy, overlap handling, timezone/DST rules for any calendar triggers, and explicit next-run semantics. No privileged service or OS scheduled task is needed for this foundation. Do not launch shell commands or add remote administration.
+The experimental SDK implements strict disabled automation plans, manual/one-time/interval/daily UTC/weekly UTC triggers, deterministic next-run previews, bounded retry metadata and skipped-run history previews. No timer, persistence, dispatch or execution exists. See [Automation](AUTOMATION.md) for exact schema/time semantics and owner review gates. Plans declare permissions but never grant them; module/action resolution and resource-scoped consent remain prerequisites.
 
 ## Settings evolution and profiles
 
-One boolean does not justify a migration framework or settings schema version yet. The strict loader preserves unknown/newer fields instead of overwriting them. Add an explicit schema version before incompatible settings changes; define supported versions, backup-first migration, safe downgrade refusal, and tests. Recovery is a user-approved reset, never an implicit migration.
+Settings now serialize schema version 1. Legacy unversioned objects read as v1 without rewrites; unsupported/malformed/repeated version markers refuse Save and recovery. No automatic migration exists. See [Settings storage](SETTINGS_STORAGE.md). Recovery is an explicit backed-up reset, never an implicit migration.
 
 Future profiles should isolate configuration, module preferences, and data beneath validated opaque profile identities resolved by a service. Do not allow arbitrary paths or derive filesystem names from display names. Test case collisions, Windows reserved names, Unicode, symlinks/reparse points, concurrent processes, read-only locations, and profile switching during writes. Vault keys and account references need separate isolation and cleanup semantics.
 
@@ -40,7 +34,7 @@ Filesystem JSON remains sufficient for current bounded settings. A database beco
 
 Vault implementation remains blocked on owner security review of OS keychain availability, an audited encryption strategy where required, key custody, lock/unlock state, plaintext lifetime/zeroization limits, migration, backups, loss recovery, and same-user threats. No plaintext secret storage or home-grown encryption is acceptable.
 
-Updates require reviewed trusted sources, established signature verification, secure signing-key custody, release channels (stable/beta/nightly), explicit user confirmation, offline behavior, rollback/failure recovery, and rollback protection. Authenticity does not prove freshness. Channel metadata is deferred until a real consumer exists; no download or installation is enabled.
+Updates require reviewed trusted sources, established signature verification, secure signing-key custody, release channels (stable/beta/nightly), explicit user confirmation, offline behavior, rollback/failure recovery, and rollback protection. Authenticity does not prove freshness. Channel/integrity metadata and inert review/rollback previews now exist; no download or installation is enabled. See [Foundation contracts](FOUNDATION_CONTRACTS.md).
 
 ## CLI and platforms
 

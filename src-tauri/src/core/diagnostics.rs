@@ -5,33 +5,45 @@ use serde::Serialize;
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Diagnostics {
-    version: &'static str,
-    platform: &'static str,
-    architecture: &'static str,
+    pub(crate) version: &'static str,
+    pub(crate) platform: &'static str,
+    pub(crate) architecture: &'static str,
     runtime: &'static str,
-    build_mode: &'static str,
+    pub(crate) build_mode: &'static str,
     local_first: bool,
     telemetry_implemented: bool,
     account_required: bool,
     config_directory: Option<String>,
     data_directory: Option<String>,
-    settings_load_state: SettingsLoadState,
+    pub(crate) settings_load_state: SettingsLoadState,
     storage_status: &'static str,
     registry_status: &'static str,
-    total_modules: usize,
-    enabled_modules: usize,
+    pub(crate) total_modules: usize,
+    pub(crate) enabled_modules: usize,
     allowed_permissions: usize,
 }
 impl Diagnostics {
     // An explicit allowlist, independent of optional path reveal. No file contents
     // or user-controlled metadata are rendered into the shareable report.
+    pub fn support_manifest(&self) -> Result<String, &'static str> {
+        serde_json::to_string_pretty(
+            &super::foundation::support::SupportManifest::from_diagnostics(self),
+        )
+        .map_err(|_| "Support manifest unavailable")
+    }
     pub fn support_report(&self) -> String {
-        format!(
+        let text = format!(
             "VSA CORE local support report\nVersion: {}\nPlatform: {}\nArchitecture: {}\nRuntime: {}\nBuild: {}\nLocal first: {}\nAccount required: {}\nTelemetry implemented: {}\nSettings: {}\nModules: {} total, {} enabled\nAllowed declared permissions: {}\nModule execution: not implemented\nOS sandbox: not implemented\nPaths and settings contents: excluded\nWrite access: not verified\n",
             self.version, self.platform, self.architecture, self.runtime, self.build_mode,
             self.local_first, self.account_required, self.telemetry_implemented,
             self.storage_status, self.total_modules, self.enabled_modules, self.allowed_permissions,
-        )
+        );
+        match self.support_manifest() {
+            Ok(manifest) => {
+                format!("{text}\nSanitized bundle manifest (no attachments):\n{manifest}\n")
+            }
+            Err(_) => text,
+        }
     }
     pub fn current(
         registry: &ModuleRegistry,
@@ -186,6 +198,37 @@ mod tests {
             let revealed = Diagnostics::current(&registry, private, private, state, true);
             let report = revealed.support_report();
             assert_eq!(report, hidden.support_report());
+            let manifest = revealed.support_manifest().unwrap();
+            assert_eq!(manifest, hidden.support_manifest().unwrap());
+            assert!(!manifest.contains("private-user"));
+            let json: serde_json::Value = serde_json::from_str(&manifest).unwrap();
+            assert_eq!(json["attachments"], serde_json::json!([]));
+            assert_eq!(json["vaultAvailable"], false);
+            assert_eq!(json["updaterAvailable"], false);
+            let mut keys: Vec<_> = json
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect();
+            keys.sort_unstable();
+            let mut expected = vec![
+                "schemaVersion",
+                "version",
+                "platform",
+                "architecture",
+                "buildMode",
+                "settingsState",
+                "moduleCount",
+                "enabledModuleCount",
+                "moduleExecutionAvailable",
+                "vaultAvailable",
+                "updaterAvailable",
+                "networkBackendAvailable",
+                "attachments",
+            ];
+            expected.sort_unstable();
+            assert_eq!(keys, expected);
             assert_eq!(report, revealed.support_report());
             assert!(!report.contains("private-user"));
             assert!(!report.contains("token-fixture"));

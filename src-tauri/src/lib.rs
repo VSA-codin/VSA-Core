@@ -6,7 +6,10 @@ mod storage;
 
 /// Experimental metadata contracts; no module execution or stable binary ABI.
 pub mod sdk {
-    pub use crate::core::automation::{AutomationPlan, AutomationTrigger};
+    pub use crate::core::automation::{
+        AutomationPlan, AutomationTrigger, RetryPolicy, RunHistoryPreview, SkippedRunMetadata,
+    };
+    pub use crate::core::foundation::{catalog, network, profiles, trust, updates, vault, version};
     pub use crate::core::module_manifest::ModuleManifest;
     pub use crate::core::module_registry::{ModuleDescriptor, ModuleLifecycle};
     pub use crate::security::{Permission, PermissionDecision, PermissionPolicy};

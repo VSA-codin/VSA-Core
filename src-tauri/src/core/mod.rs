@@ -9,3 +9,5 @@ pub mod settings;
 
 pub mod automation;
 pub mod module_manifest;
+
+pub mod foundation;

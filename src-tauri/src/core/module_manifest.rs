@@ -13,6 +13,8 @@ struct ManifestFields {
     name: String,
     description: String,
     version: Option<String>,
+    required_core_api: Option<super::foundation::version::ReleaseVersion>,
+    publisher_id: Option<String>,
     lifecycle: ModuleLifecycle,
     declared_permissions: Vec<Permission>,
 }
@@ -53,6 +55,8 @@ impl ModuleManifest {
     fn descriptor(&self) -> ModuleDescriptor {
         let mut descriptor = ModuleDescriptor::new(&self.0.id, &self.0.name, &self.0.description);
         descriptor.version = self.0.version.clone();
+        descriptor.required_core_api = self.0.required_core_api;
+        descriptor.publisher_id = self.0.publisher_id.clone();
         descriptor.lifecycle = self.0.lifecycle;
         descriptor.declared_permissions = self.0.declared_permissions.clone();
         descriptor
@@ -61,6 +65,8 @@ impl ModuleManifest {
     pub fn into_descriptor(self) -> ModuleDescriptor {
         let mut descriptor = ModuleDescriptor::new(self.0.id, self.0.name, self.0.description);
         descriptor.version = self.0.version;
+        descriptor.required_core_api = self.0.required_core_api;
+        descriptor.publisher_id = self.0.publisher_id;
         descriptor.lifecycle = self.0.lifecycle;
         descriptor.declared_permissions = self.0.declared_permissions;
         descriptor
@@ -74,6 +80,30 @@ mod tests {
 
     const VALID: &str = r#"{"schemaVersion":1,"id":"example","name":"Example É","description":"Metadata","version":"1.0.0","lifecycle":"available","declaredPermissions":["network"]}"#;
 
+    #[test]
+    fn compatibility_and_publisher_metadata_are_validated_without_trust() {
+        let extended = VALID.replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"requiredCoreApi\":\"1.0.0\",\"publisherId\":\"example-publisher\"");
+        let m = ModuleManifest::parse(extended.as_bytes())
+            .unwrap()
+            .into_descriptor();
+        assert_eq!(m.required_core_api.unwrap().components(), [1, 0, 0]);
+        assert_eq!(m.publisher_id.as_deref(), Some("example-publisher"));
+        for input in [
+            extended.replace("example-publisher", "../publisher"),
+            extended.replace(
+                "\"requiredCoreApi\":\"1.0.0\"",
+                "\"requiredCoreApi\":\"01.0.0\"",
+            ),
+            extended.replace(
+                "\"publisherId\":\"example-publisher\"",
+                "\"publisherId\":\"example-publisher\",\"publisherId\":\"other\"",
+            ),
+            VALID.replace("1.0.0", "banana"),
+            VALID.replace("1.0.0", "1.0.0-beta"),
+        ] {
+            assert!(ModuleManifest::parse(input.as_bytes()).is_err());
+        }
+    }
     #[test]
     fn admission_roundtrip_never_grants_permissions() {
         let manifest = ModuleManifest::parse(VALID.as_bytes()).unwrap();

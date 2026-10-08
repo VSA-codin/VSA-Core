@@ -12,11 +12,13 @@ This experimental contract describes modules; it does not install, load, execute
 | id | 1–64 ASCII bytes: lowercase letters, digits, hyphens; starts/ends with a letter or digit |
 | name | Nonblank; at most 128 UTF-8 bytes; no control or Unicode directional formatting characters |
 | description | At most 2048 UTF-8 bytes; no control or Unicode directional formatting characters; may be empty |
-| version | Null/omitted for Planned; nonblank string up to 64 UTF-8 bytes for Available; no control or Unicode directional formatting characters |
+| version | Null/omitted for Planned; canonical stable major.minor.patch for Available, bounded u32 components; prerelease/build syntax unsupported |
+| requiredCoreApi | Optional/null canonical stable API version; does not authorize execution |
+| publisherId | Optional/null validated metadata ID; unverified claim, not a trusted publisher |
 | lifecycle | Planned or Available only |
 | declaredPermissions | Required array of unique known capability names |
 
-Version strings remain descriptive metadata; there is no semantic-version comparison, compatibility calculation, or release selection. Publisher, repository, compatibility, package hashes, signatures, and release channels must be added through a reviewed schema change when consumers need them. Unknown fields are refused today rather than interpreted as authority.
+Version syntax and numeric API compatibility previews are implemented. Missing API metadata remains unspecified; experimental 0.x API minor changes are conservatively incompatible. Publisher IDs remain unverified. Signature encoding/trust-state contracts are separate from manifest admission and have no verifier or trusted state. Package resources, signatures, dependency resolution and executable entries remain unavailable. See [Foundation contracts](FOUNDATION_CONTRACTS.md). Unknown fields are refused rather than interpreted as authority. The experimental v1 extension adds optional metadata; older loaders refuse those fields and must not be advertised as interoperable.
 
 Source manifests cannot assert Installed or Enabled: only a future trusted installation service could establish local state. Registry descriptors use a single lifecycle enum so Enabled implies Installed; no contradictory booleans exist. The registry separately validates descriptors and rejects duplicate IDs before mutation. Registration order is deterministic. IDs are identities, never filenames or paths; platform reserved filenames must be addressed before IDs are used in storage.
 

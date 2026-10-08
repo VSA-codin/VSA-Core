@@ -51,3 +51,7 @@ Review upstream ownership/licensing and the exact combined product scope before 
 5. Review each authenticated provider and Vault boundary independently before real accounts or secrets are involved.
 
 No date or production-readiness promise is made. Installation, Module Store, automatic downloads, execution, OS sandboxing, and all authenticated products remain absent.
+
+## Current shared contract foundation
+
+CORE now supplies inert profile identity/selection, Vault reference, signing metadata, catalog/API compatibility, updater/rollback, network dry-run and UTC automation preview contracts. These support the planned Steam Power Suite, VSA ASF, VSA StreamDropCollector and VSA R4R+SDA without embedding their implementations or authentication details. No module is installable/executable. See [Foundation contracts](FOUNDATION_CONTRACTS.md) for implemented boundaries and the owner security gates that precede integration.

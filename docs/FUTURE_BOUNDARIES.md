@@ -12,7 +12,7 @@ Future enforcement points could include package admission, process creation, and
 
 ## Settings and local profiles
 
-The current schema is one boolean; no schema version or migration engine is needed yet. Missing fields use intentional defaults. Unknown fields fail closed and are preserved, including files from a future incompatible version. Recovery is explicit and backed up; it must not be described as automatic migration.
+The current schema is version 1 with one boolean; legacy unversioned objects are read without rewrites and no migration engine exists. Unsupported or ambiguous version markers block Save and recovery. Missing fields use intentional defaults. Unknown fields fail closed and are preserved, including files from a future incompatible version. Recovery is explicit and backed up; it must not be described as automatic migration.
 
 Before adding incompatible fields, define schema versions, supported upgrade/downgrade behavior, and backup-preserving migrations. An older application must not silently overwrite newer data. Future local profiles should have separate validated identities and explicit selection; do not turn user input into arbitrary filesystem paths. Keep secrets separate from ordinary settings.
 
@@ -22,7 +22,7 @@ Select an OS keychain or an independently reviewed encryption/key-management str
 
 ## Updates and releases
 
-Review signed releases, authenticity verification and signing-key custody, stable/beta/nightly source separation, a user-visible release source, rollback protection, and recovery from failed upgrades. Authenticity and freshness require separate consideration. No updater, production signing, installer pipeline, or rollback engine is implemented.
+Review signed releases, authenticity verification and signing-key custody, stable/beta/nightly source separation, a user-visible release source, rollback protection, and recovery from failed upgrades. Authenticity and freshness require separate consideration. Inert updater/rollback contracts and Windows installer compilation are implemented; no real updater, production signing, publishing pipeline or rollback engine exists. See [Foundation contracts](FOUNDATION_CONTRACTS.md) and [Release process](RELEASE_PROCESS.md).
 
 ## Upstream-derived modules
 
