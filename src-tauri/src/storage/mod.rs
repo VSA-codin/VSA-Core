@@ -1,4 +1,4 @@
-use crate::core::settings::{AppSettings, SettingsLoadState};
+use crate::core::settings::{reset_schema_supported, AppSettings, SettingsLoadState};
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
@@ -109,7 +109,8 @@ impl SettingsStore {
     }
     fn corrupted_bytes(&self) -> Result<Vec<u8>, &'static str> {
         let bytes = self.read_bytes()?.ok_or("Settings recovery unavailable")?;
-        if serde_json::from_slice::<AppSettings>(&bytes).is_ok() {
+        if !reset_schema_supported(&bytes) || serde_json::from_slice::<AppSettings>(&bytes).is_ok()
+        {
             return Err("Settings recovery unavailable");
         }
         Ok(bytes)
@@ -153,6 +154,9 @@ impl SettingsStore {
         }
         let bytes =
             serde_json::to_vec_pretty(settings).map_err(|_| "Settings cannot be encoded")?;
+        if bytes.len() as u64 > MAX_SETTINGS_BYTES {
+            return Err("Settings encoding exceeds size limit");
+        }
         let temporary = self.directory.join("settings.json.tmp");
         let mut file = create_private_file(&temporary)
             .map_err(|_| "Settings temporary file unavailable; check for interrupted write")?;
@@ -195,6 +199,41 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+    #[test]
+    fn unsupported_settings_versions_are_never_saved_or_reset() {
+        for bytes in [
+            br#"{"schemaVersion":2,"compactLayout":true}"#.as_slice(),
+            br#"{"schemaVersion":null}"#,
+            br#"{"schemaVersion":"2"}"#,
+            br#"{"schemaVersion":2,"schemaVersion":1}"#,
+            br#"{"schemaVersion":1,"schemaVersion":2}"#,
+            br#"{"schemaVersion":2,"schema\u0056ersion":1}"#,
+        ] {
+            let fixture = Fixture::new();
+            let path = fixture.0.join("settings.json");
+            fs::write(&path, bytes).unwrap();
+            let store = fixture.store();
+            assert!(store.load().is_err());
+            assert!(store.save(&AppSettings::default()).is_err());
+            assert!(!store.recovery_available());
+            assert!(store.recover().is_err());
+            assert_eq!(fs::read(path).unwrap(), bytes);
+            assert!(!fixture.0.join("settings.json.corrupt.bak").exists());
+        }
+    }
+    #[test]
+    fn legacy_settings_read_without_rewrite_and_explicit_save_versions_them() {
+        let fixture = Fixture::new();
+        let path = fixture.0.join("settings.json");
+        fs::write(&path, br#"{"compactLayout":true}"#).unwrap();
+        let store = fixture.store();
+        let settings = store.load().unwrap();
+        assert!(settings.compact_layout);
+        assert_eq!(fs::read(&path).unwrap(), br#"{"compactLayout":true}"#);
+        store.save(&settings).unwrap();
+        let saved: serde_json::Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+        assert_eq!(saved["schemaVersion"], 1);
     }
     #[cfg(unix)]
     #[test]
