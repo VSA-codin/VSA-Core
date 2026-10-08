@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "vsa-asf",
+  "name": "VSA ASF",
+  "description": "Planned ASF integration.",
+  "version": null,
+  "lifecycle": "planned",
+  "declaredPermissions": []
+}

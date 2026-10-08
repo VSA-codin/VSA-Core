@@ -31,6 +31,12 @@ VSA CORE aims to follow these principles:
 - Official releases should be verifiable
 - Security-sensitive functionality should fail safely
 
+## Current foundation boundary
+
+CORE currently provides metadata, nonsecret local settings and local diagnostics. Logical module permissions do not provide an OS sandbox. Vault, encryption, module execution and updates are not implemented. Same-user processes and filesystem races remain outside the protection boundary.
+
+See the [threat model](docs/THREAT_MODEL.md) and [foundation audit](docs/FOUNDATION_AUDIT.md) for implementation limits. The known moderate glib 0.18 stack advisory remains open pending an upstream-compatible resolution; it is not suppressed.
+
 ## Supported versions
 
 VSA CORE is currently in early development.
@@ -40,3 +46,5 @@ Until the first stable release, security fixes are provided for the latest devel
 ## Public disclosure
 
 Please allow reasonable time for a security issue to be investigated and fixed before publishing technical details.
+
+Experimental signature parsing never establishes trust. Vault/network/update/catalog foundations have no execution or secret-byte APIs. Windows installer publisher metadata and signed Git commits do not imply Authenticode signing. The owner-reported NSIS uninstall data-loss discrepancy remains a native acceptance blocker; see [Windows packaging](docs/WINDOWS_PACKAGING.md).

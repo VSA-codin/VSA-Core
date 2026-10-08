@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "vsa-r4r-sda",
+  "name": "VSA R4R + SDA",
+  "description": "Planned R4R and SDA integration.",
+  "version": null,
+  "lifecycle": "planned",
+  "declaredPermissions": []
+}

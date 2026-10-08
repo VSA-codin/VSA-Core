@@ -13,14 +13,20 @@ permissions:
 
 jobs:
   build:
-    name: Build and Check
-    runs-on: ubuntu-24.04
+    name: Build and Check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
       - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -52,5 +58,21 @@ jobs:
       - name: Build frontend
         run: pnpm build
 
+      - name: Check Rust formatting
+        run: cargo fmt --check --manifest-path src-tauri/Cargo.toml
+
       - name: Check Rust
         run: cargo check --manifest-path src-tauri/Cargo.toml
+
+      - name: Lint Rust
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Test Rust
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Build native executable
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      - name: Validate Windows installers
+        if: runner.os == 'Windows'
+        run: pnpm tauri build --bundles nsis,msi

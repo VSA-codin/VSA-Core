@@ -4,20 +4,50 @@ mod security;
 mod services;
 mod storage;
 
-use commands::get_core_status;
-
-// Temporary command used to verify communication between React and Rust.
-// It will be removed once the real VSA CORE commands are in place.
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+/// Experimental metadata contracts; no module execution or stable binary ABI.
+pub mod sdk {
+    pub use crate::core::automation::{
+        AutomationPlan, AutomationTrigger, RetryPolicy, RunHistoryPreview, SkippedRunMetadata,
+    };
+    pub use crate::core::foundation::{catalog, network, profiles, trust, updates, vault, version};
+    pub use crate::core::module_manifest::ModuleManifest;
+    pub use crate::core::module_registry::{ModuleDescriptor, ModuleLifecycle};
+    pub use crate::security::{Permission, PermissionDecision, PermissionPolicy};
 }
+
+use commands::{
+    get_core_status, get_diagnostics, get_modules, get_settings, get_support_report,
+    recover_settings, settings_recovery_available, update_settings,
+};
+use core::ModuleRegistry;
+use std::sync::Mutex;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, get_core_status])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let result = tauri::Builder::default()
+        .setup(|app| {
+            app.manage(ModuleRegistry::roadmap().map_err(std::io::Error::other)?);
+            let directory = app.path().app_config_dir()?;
+            app.manage(Mutex::new(services::SettingsService::new(
+                storage::SettingsStore::new(directory),
+            )));
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_core_status,
+            get_modules,
+            get_settings,
+            update_settings,
+            settings_recovery_available,
+            recover_settings,
+            get_diagnostics,
+            get_support_report
+        ])
+        .run(tauri::generate_context!());
+    if result.is_err() {
+        // Startup/runtime errors may contain local paths. Do not dump them.
+        eprintln!("VSA CORE could not run. Review installation and local configuration access.");
+        std::process::exit(1);
+    }
 }

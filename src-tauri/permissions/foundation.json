@@ -1,0 +1,20 @@
+{
+  "permission": [
+    {
+      "identifier": "allow-foundation",
+      "description": "Read local foundation metadata and explicitly manage the bounded nonsecret settings file.",
+      "commands": {
+        "allow": [
+          "get_core_status",
+          "get_modules",
+          "get_settings",
+          "update_settings",
+          "settings_recovery_available",
+          "recover_settings",
+          "get_diagnostics",
+          "get_support_report"
+        ]
+      }
+    }
+  ]
+}

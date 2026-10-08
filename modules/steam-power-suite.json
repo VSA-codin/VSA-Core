@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "steam-power-suite",
+  "name": "Steam Power Suite",
+  "description": "Planned Steam utilities.",
+  "version": null,
+  "lifecycle": "planned",
+  "declaredPermissions": []
+}
