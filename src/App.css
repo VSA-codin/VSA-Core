@@ -176,3 +176,94 @@ dd { margin: 0; min-width: 0; }
   .switch-input:checked + .switch-track { border-color: Highlight; }
   .switch-input:checked + .switch-track .switch-thumb { background: Highlight; }
 }
+
+.window-shell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 34px minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 34px;
+  border-bottom: 1px solid var(--border);
+  background: #090909;
+  user-select: none;
+}
+
+.window-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 10px;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.window-title-mark {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #3d3d3d;
+  border-radius: 5px;
+  background: #151515;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
+}
+
+.window-control {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #b8b8b8;
+  line-height: 1;
+}
+
+.window-control:not(:disabled):hover {
+  border-color: transparent;
+  background: #202020;
+  color: #fff;
+}
+
+.window-control:not(:disabled):active {
+  background: #2b2b2b;
+}
+
+.window-close:not(:disabled):hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.window-close:not(:disabled):active {
+  background: #a32117;
+}
+
+.window-control:focus-visible {
+  outline-offset: -3px;
+}
+
+.window-shell .app-shell {
+  height: 100%;
+}

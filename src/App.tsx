@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./services/api";
 import "./App.css";
 import { useLocalResource } from "./hooks/useLocalResource";
@@ -45,9 +46,49 @@ function App() {
 
   const isOnline = coreStatus !== null && !coreError;
 
+  const appWindow = getCurrentWindow();
+
   return (
-    <div className={`app-shell ${settings.compactLayout ? "compact" : ""}`}>
-      <a className="skip-link" href="#main-content">Skip to content</a>
+    <div className="window-shell">
+      <div className="window-titlebar" data-tauri-drag-region onDoubleClick={() => void appWindow.toggleMaximize()}>
+        <div className="window-title" data-tauri-drag-region>
+          <span className="window-title-mark">V</span>
+          <span>VSA CORE</span>
+        </div>
+
+        <div className="window-controls">
+          <button
+            className="window-control"
+            type="button"
+            aria-label="Minimize"
+            title="Minimize"
+            onClick={() => void appWindow.minimize()}
+          >
+            <span aria-hidden="true">─</span>
+          </button>
+          <button
+            className="window-control"
+            type="button"
+            aria-label="Maximize or restore"
+            title="Maximize or restore"
+            onClick={() => void appWindow.toggleMaximize()}
+          >
+            <span aria-hidden="true">□</span>
+          </button>
+          <button
+            className="window-control window-close"
+            type="button"
+            aria-label="Close"
+            title="Close"
+            onClick={() => void appWindow.close()}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      </div>
+
+      <div className={`app-shell ${settings.compactLayout ? "compact" : ""}`}>
+        <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">V</div>
@@ -120,6 +161,7 @@ function App() {
         {page === "Support Report" && <SupportReport />}
         {page === "Settings" && <Settings onBusyChange={setSettingsBusy} onChange={value => { ++settingsRevision.current; setSettings(value); setSettingsError(false); }} />}
       </main>
+      </div>
     </div>
   );
 }
