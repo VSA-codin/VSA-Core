@@ -25,22 +25,25 @@ export function SupportReport() {
   }
 
   return (
-    <section className="panel" aria-labelledby="support-report-title">
+    <section className="workspace-page support-page" aria-labelledby="support-report-title">
       <div className="panel-heading"><h2 id="support-report-title">Support Report</h2><span className="development-badge">Local only</span></div>
       <p>Includes version, platform, runtime, settings health and registry counts. Excludes paths, settings contents and module descriptions, even after path reveal in Trust Center. Nothing is uploaded or saved automatically.</p>
-      <button ref={previewButton} type="button" disabled={loading} onClick={() => void preview()}>
-        {loading ? "Preparing report…" : report ? "Refresh report preview" : "Preview sanitized report"}
-      </button>
-      {loading && <p role="status">Reading local diagnostics…</p>}
-      {error && <p role="alert">Support report unavailable. Retry the preview.</p>}
-      {report && (
-        <>
-          <p role="status">Report ready. Review the text before sharing it manually.</p>
-          <label htmlFor="support-report">Sanitized report text</label>
-          <textarea id="support-report" className="support-report" readOnly value={report} rows={18} spellCheck={false} />
-          <button type="button" onClick={() => { setReport(null); previewButton.current?.focus(); }}>Hide report preview</button>
-        </>
-      )}
+      <div className="workspace-section">
+        <h3>Report preview</h3>
+        <button ref={previewButton} type="button" disabled={loading} onClick={() => void preview()}>
+          {loading ? "Preparing report…" : report ? "Refresh report preview" : "Preview sanitized report"}
+        </button>
+        {loading && <p role="status">Reading local diagnostics…</p>}
+        {error && <p role="alert">Support report unavailable. Retry the preview.</p>}
+        {report && (
+          <>
+            <p role="status">Report ready. Review the text before sharing it manually.</p>
+            <label htmlFor="support-report">Sanitized report text</label>
+            <textarea id="support-report" className="support-report" readOnly value={report} rows={18} spellCheck={false} />
+            <button type="button" onClick={() => { setReport(null); previewButton.current?.focus(); }}>Hide report preview</button>
+          </>
+        )}
+      </div>
     </section>
   );
 }

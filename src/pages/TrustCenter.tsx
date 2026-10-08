@@ -45,7 +45,7 @@ export function TrustCenter() {
     ["Allowed declared permissions", String(diagnostics.allowedPermissions)],
   ] : [];
   return (
-    <section aria-label="Trust Center">
+    <section className="workspace-page trust-page" aria-label="Trust Center">
       <p className="page-intro">A factual view of this foundation: what exists, what the local core reports, and where its boundaries end.</p>
       <h2>Implemented</h2>
       <div className="trust-facts">
@@ -62,7 +62,7 @@ export function TrustCenter() {
           {pathsLoading ? "Loading local paths…" : showPaths ? "Hide local paths" : "Show local paths"}
         </button>
         {pathsError && <p role="alert">Local paths could not be loaded. They remain hidden.</p>}
-        <dl className="diagnostics">
+        <dl className="diagnostics" aria-label="Local core diagnostics">
           {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
         </dl>
         </>}

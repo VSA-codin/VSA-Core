@@ -89,8 +89,8 @@ export function Settings({ onChange, onBusyChange }: {
   }
 
   return (
-    <section className="panel">
-      <h2>Local settings</h2>
+    <section className="workspace-page settings-page" aria-labelledby="settings-title">
+      <div className="panel-heading"><h2 id="settings-title">Local settings</h2><span className="development-badge">This device</span></div>
       <p>Stored on this device. No secrets or telemetry configuration.</p>
       {error && <p role="alert">{error}</p>}
       {!settings && error && <button type="button" disabled={saving || loading} onClick={load}>Retry loading settings</button>}
@@ -143,12 +143,12 @@ export function Settings({ onChange, onBusyChange }: {
               </span>
             </span>
           </label>
-          <p>
+          <div className="page-actions">
             <button type="button" disabled={saving || !dirty} onClick={save}>
               {saving ? "Saving…" : "Save settings"}
             </button>
             {" "}<button type="button" disabled={saving} onClick={() => { const next = { compactLayout: false }; setSettings(next); setDirty(true); setSaved(false); }}>Reset preference</button>
-          </p>
+          </div>
           <p>{dirty ? "Preference has unsaved changes. Save settings to apply it and keep it after restart." : "Save applies the preference across the interface and keeps it after restart."}</p>
         </>
       )}

@@ -56,7 +56,7 @@ function App() {
           <span>VSA CORE</span>
         </div>
 
-        <div className="window-controls">
+        <div className="window-controls" onDoubleClick={event => event.stopPropagation()}>
           <button
             className="window-control"
             type="button"
@@ -104,7 +104,7 @@ function App() {
         <nav className="navigation" aria-label="Main navigation">
           {navigation.map((item) => (
             <button
-              className={`nav-item ${page === item ? "active" : ""}`}
+              className={`nav-item ${page === item ? "active" : ""} ${item === "Trust Center" ? "nav-section-start" : ""}`}
               onClick={() => setPage(item)}
               disabled={settingsBusy && page !== item}
               aria-current={page === item ? "page" : undefined}
@@ -141,21 +141,23 @@ function App() {
         {page === "Modules" && <Modules />}
         {page === "Trust Center" && <TrustCenter />}
         {["Automation", "Vault"].includes(page) && (
-          <section className="panel boundary-panel">
+          <section className="workspace-page boundary-panel">
             <div className="panel-heading"><h2>{page === "Automation" ? "Local workflows" : "Secret storage"}</h2><span className="development-badge">Not implemented</span></div>
             <p>{page === "Automation"
               ? "Future local workflows and scheduling will require explicit permissions. No automation runs today."
               : "Future secret storage requires a separately reviewed protection and recovery design. No secrets are stored or protected by this application today."}</p>
-            <h3>{page === "Automation" ? "Metadata foundation" : "Design boundary"}</h3>
-            {page === "Automation" ? <ul>
-              <li>Validated manual and interval trigger contracts.</li>
-              <li>Plans are disabled metadata in the experimental SDK.</li>
-              <li>No timers, background jobs or action execution.</li>
-            </ul> : <ul>
-              <li>OS keychain and audited encryption require review.</li>
-              <li>Lock, unlock, recovery and backup behavior remain undecided.</li>
-              <li>Do not enter passwords, tokens or private keys into CORE.</li>
-            </ul>}
+            <div className="workspace-section">
+              <h3>{page === "Automation" ? "Metadata foundation" : "Design boundary"}</h3>
+              {page === "Automation" ? <ul>
+                <li>Validated manual and interval trigger contracts.</li>
+                <li>Plans are disabled metadata in the experimental SDK.</li>
+                <li>No timers, background jobs or action execution.</li>
+              </ul> : <ul>
+                <li>OS keychain and audited encryption require review.</li>
+                <li>Lock, unlock, recovery and backup behavior remain undecided.</li>
+                <li>Do not enter passwords, tokens or private keys into CORE.</li>
+              </ul>}
+            </div>
           </section>
         )}
         {page === "Support Report" && <SupportReport />}
