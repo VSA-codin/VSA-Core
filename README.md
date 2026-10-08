@@ -13,7 +13,7 @@ It provides shared infrastructure for VSA applications, modules, integrations, a
 - No hidden telemetry
 - No secret collection or storage implemented
 - No telemetry or crash reporting implemented
-- Target platforms: Windows 10 / Windows 11 / Linux (native verification pending)
+- Target platforms: Windows 10 / Windows 11 / Linux (native QA pending); owner-reported Windows baseline recorded
 - Modular architecture
 - Planned: independently disableable optional modules
 - Self-hostable where applicable
@@ -60,7 +60,7 @@ VSA CORE is currently in early development. Implemented foundations include a me
 
 See [Contributing](CONTRIBUTING.md) for local setup and validation. The [foundation audit](docs/FOUNDATION_AUDIT.md) records the current network, storage and permission boundaries; [desktop readiness](docs/READINESS.md) lists native review still required.
 
-See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation execution, updater, and executable modules are not implemented. Experimental automation plans are inert SDK metadata only. See the [Ecosystem roadmap](docs/ECOSYSTEM_ROADMAP.md), [Module contract](docs/MODULE_CONTRACT.md), and [Local data design](docs/LOCAL_DATA_DESIGN.md) for review gates.
+See [Architecture](docs/ARCHITECTURE.md) and [Threat model](docs/THREAT_MODEL.md) for current behavior and limitations. Vault, automation execution, updater, and executable modules are not implemented. Experimental profiles, Vault references, signatures, catalog/update/network plans and automation schedules are inert SDK metadata only. Settings have schema-version guards and support previews include an attachment-free sanitized bundle manifest. See [Foundation contracts](docs/FOUNDATION_CONTRACTS.md), [Windows packaging](docs/WINDOWS_PACKAGING.md), [Windows QA](docs/WINDOWS_QA.md), [Settings storage](docs/SETTINGS_STORAGE.md), [Automation](docs/AUTOMATION.md), [Accessibility QA](docs/ACCESSIBILITY_QA.md) and [Release process](docs/RELEASE_PROCESS.md). The reported NSIS data-deletion discrepancy remains unresolved pending native retest with Delete app data unchecked. See the [Ecosystem roadmap](docs/ECOSYSTEM_ROADMAP.md), [Module contract](docs/MODULE_CONTRACT.md), and [Local data design](docs/LOCAL_DATA_DESIGN.md) for review gates.
 
 ## License
 

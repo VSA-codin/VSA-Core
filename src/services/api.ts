@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export type AppSettings = { compactLayout: boolean };
+export type AppSettings = { schemaVersion: 1; compactLayout: boolean };
 
 export type CoreStatus = {
   name: string;
@@ -22,6 +22,8 @@ export type ModuleDescriptor = {
   name: string;
   description: string;
   version: string | null;
+  requiredCoreApi: string | null;
+  publisherId: string | null;
   lifecycle: ModuleLifecycle;
   declaredPermissions: Permission[];
   permissionPolicy: Partial<Record<Permission, "allow" | "deny">>;

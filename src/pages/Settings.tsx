@@ -6,6 +6,8 @@ export function Settings({ onChange, onBusyChange }: {
   onBusyChange: (busy: boolean) => void;
 }) {
   const request = useRef(0);
+  const recoveryReview = useRef<HTMLButtonElement>(null);
+  const savedStatus = useRef<HTMLParagraphElement>(null);
   const [dirty, setDirty] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [error, setError] = useState("");
@@ -14,6 +16,8 @@ export function Settings({ onChange, onBusyChange }: {
   const [recoverable, setRecoverable] = useState(false);
   const [confirmRecovery, setConfirmRecovery] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => { if (saved) savedStatus.current?.focus(); }, [saved]);
 
   async function load() {
     const current = ++request.current;
@@ -97,12 +101,14 @@ export function Settings({ onChange, onBusyChange }: {
       {!settings && recoverable && (
         <div>
           <p>Recovery saves the original bytes as settings.json.corrupt.bak in the application config directory, then resets compact layout to Off. Existing backups are never overwritten.</p>
-          <button type="button" disabled={saving || loading} aria-expanded={confirmRecovery} onClick={() => setConfirmRecovery(value => !value)}>Review settings recovery</button>
+          <button ref={recoveryReview} type="button" disabled={saving || loading} aria-expanded={confirmRecovery} onClick={() => setConfirmRecovery(value => !value)}>Review settings recovery</button>
           {confirmRecovery && (
-            <div role="group" aria-label="Confirm settings recovery">
+            <div role="group" aria-label="Confirm settings recovery" onKeyDown={event => {
+              if (event.key === "Escape" && !saving) { event.preventDefault(); setConfirmRecovery(false); recoveryReview.current?.focus(); }
+            }}>
               <p>Back up the corrupted settings and reset to defaults?</p>
               <button type="button" disabled={saving} onClick={() => void recover()}>{saving ? "Recovering…" : "Back up and reset settings"}</button>{" "}
-              <button type="button" disabled={saving} onClick={() => setConfirmRecovery(false)}>Cancel</button>
+              <button type="button" disabled={saving} onClick={() => { setConfirmRecovery(false); recoveryReview.current?.focus(); }}>Cancel</button>
             </div>
           )}
         </div>
@@ -131,7 +137,7 @@ export function Settings({ onChange, onBusyChange }: {
                 aria-label="Compact layout"
                 aria-describedby="compact-description"
                 onChange={event => {
-                  const next = { compactLayout: event.target.checked };
+                  const next: AppSettings = { schemaVersion: 1, compactLayout: event.target.checked };
                   setSettings(next);
                   setDirty(true);
                   setSaved(false);
@@ -147,12 +153,18 @@ export function Settings({ onChange, onBusyChange }: {
             <button type="button" disabled={saving || !dirty} onClick={save}>
               {saving ? "Saving…" : "Save settings"}
             </button>
-            {" "}<button type="button" disabled={saving} onClick={() => { const next = { compactLayout: false }; setSettings(next); setDirty(true); setSaved(false); }}>Reset preference</button>
+            {" "}<button type="button" disabled={saving} onClick={() => { const next: AppSettings = { schemaVersion: 1, compactLayout: false }; setSettings(next); setDirty(true); setSaved(false); }}>Reset preference</button>
           </div>
           <p>{dirty ? "Preference has unsaved changes. Save settings to apply it and keep it after restart." : "Save applies the preference across the interface and keeps it after restart."}</p>
         </>
       )}
-      {saved && <p role="status">Settings saved locally.</p>}
+      {saved && <p ref={savedStatus} role="status" tabIndex={-1}>Settings saved locally.</p>}
+      <div className="workspace-section">
+        <h3>Profiles and storage</h3>
+        <p>Settings currently use one application configuration on this device. Profile identity and selection contracts are a foundation only; switching, portable storage, import and export are unavailable.</p>
+        <p>Saving writes settings schema version 1. Legacy settings are read without automatic rewrites. Unsupported versions require manual review and cannot be reset through recovery.</p>
+        <p>Uninstall is intended to preserve settings. With the NSIS installer, leave “Delete app data” unchecked. Native persistence still needs retesting; keep a separate backup before installer testing.</p>
+      </div>
     </section>
   );
 }

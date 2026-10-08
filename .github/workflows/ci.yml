@@ -65,7 +65,14 @@ jobs:
         run: cargo check --manifest-path src-tauri/Cargo.toml
 
       - name: Lint Rust
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 
       - name: Test Rust
         run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Build native executable
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      - name: Validate Windows installers
+        if: runner.os == 'Windows'
+        run: pnpm tauri build --bundles nsis,msi

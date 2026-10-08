@@ -45,6 +45,9 @@ export function Modules() {
                 <dl className="metadata">
                   <div><dt>Module ID</dt><dd><code>{module.id}</code></dd></div>
                   <div><dt>Version</dt><dd>{module.version ?? "Not released"}</dd></div>
+                  <div><dt>CORE API</dt><dd>{module.requiredCoreApi ?? "Not specified"}</dd></div>
+                  <div><dt>Publisher ID</dt><dd>{module.publisherId ?? "Not attested"}</dd></div>
+                  <div><dt>Trust</dt><dd>Unsigned metadata · verification unavailable</dd></div>
                   <div><dt>Runtime</dt><dd>Not implemented</dd></div>
                 </dl>
                 <div className="permission-section">

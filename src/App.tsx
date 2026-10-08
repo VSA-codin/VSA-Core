@@ -25,9 +25,10 @@ type Page = typeof navigation[number];
 function App() {
   const settingsRevision = useRef(0);
   const contentRef = useRef<HTMLElement>(null);
+  const [windowError, setWindowError] = useState(false);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState(false);
-  const [settings, setSettings] = useState<AppSettings>({ compactLayout: false });
+  const [settings, setSettings] = useState<AppSettings>({ schemaVersion: 1, compactLayout: false });
   const [page, setPage] = useState<Page>("Dashboard");
   const { data: coreStatus, error: coreError, reload: reloadCore } = useLocalResource(api.getCoreStatus);
 
@@ -47,10 +48,14 @@ function App() {
   const isOnline = coreStatus !== null && !coreError;
 
   const appWindow = getCurrentWindow();
+  function windowAction(action: () => Promise<void>) {
+    setWindowError(false);
+    void action().catch(() => setWindowError(true));
+  }
 
   return (
     <div className="window-shell">
-      <div className="window-titlebar" data-tauri-drag-region onDoubleClick={() => void appWindow.toggleMaximize()}>
+      <div className="window-titlebar" data-tauri-drag-region onDoubleClick={() => windowAction(() => appWindow.toggleMaximize())}>
         <div className="window-title" data-tauri-drag-region>
           <span className="window-title-mark">V</span>
           <span>VSA CORE</span>
@@ -62,7 +67,7 @@ function App() {
             type="button"
             aria-label="Minimize"
             title="Minimize"
-            onClick={() => void appWindow.minimize()}
+            onClick={() => windowAction(() => appWindow.minimize())}
           >
             <span aria-hidden="true">─</span>
           </button>
@@ -71,7 +76,7 @@ function App() {
             type="button"
             aria-label="Maximize or restore"
             title="Maximize or restore"
-            onClick={() => void appWindow.toggleMaximize()}
+            onClick={() => windowAction(() => appWindow.toggleMaximize())}
           >
             <span aria-hidden="true">□</span>
           </button>
@@ -80,7 +85,7 @@ function App() {
             type="button"
             aria-label="Close"
             title="Close"
-            onClick={() => void appWindow.close()}
+            onClick={() => windowAction(() => appWindow.close())}
           >
             <span aria-hidden="true">×</span>
           </button>
@@ -135,6 +140,7 @@ function App() {
           </div>
         </header>
 
+        {windowError && <p role="alert">Window control could not complete. Try again using the titlebar control.</p>}
         {settingsError && <p role="alert">Saved layout could not be loaded. Using default layout; see Settings for recovery.</p>}
         {coreError && <div><p role="alert">Core status unavailable.</p><button type="button" onClick={() => void reloadCore()}>Retry core status</button></div>}
         {page === "Dashboard" && <Dashboard coreStatus={coreStatus} coreError={coreError} />}
@@ -149,12 +155,12 @@ function App() {
             <div className="workspace-section">
               <h3>{page === "Automation" ? "Metadata foundation" : "Design boundary"}</h3>
               {page === "Automation" ? <ul>
-                <li>Validated manual and interval trigger contracts.</li>
-                <li>Plans are disabled metadata in the experimental SDK.</li>
+                <li>Validated manual, one-time, interval, daily UTC and weekly UTC trigger contracts.</li>
+                <li>Deterministic next-run previews, bounded retry metadata and inert history contracts. Plans remain disabled.</li>
                 <li>No timers, background jobs or action execution.</li>
               </ul> : <ul>
                 <li>OS keychain and audited encryption require review.</li>
-                <li>Lock, unlock, recovery and backup behavior remain undecided.</li>
+                <li>Scoped secret references and unavailable/locked/recovery metadata exist; key custody and unlocking require review.</li>
                 <li>Do not enter passwords, tokens or private keys into CORE.</li>
               </ul>}
             </div>

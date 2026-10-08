@@ -16,7 +16,7 @@
         "height": 760,
         "minWidth": 1000,
         "minHeight": 650,
-	"decorations": false
+        "decorations": false
       }
     ],
     "security": {
@@ -26,6 +26,15 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "VSA-codin",
+    "shortDescription": "Privacy-first local desktop foundation for the VSA ecosystem",
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"]
+      }
+    },
     "targets": "all",
     "icon": [
       "icons/32x32.png",

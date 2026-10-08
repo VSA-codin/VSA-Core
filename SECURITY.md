@@ -46,3 +46,5 @@ Until the first stable release, security fixes are provided for the latest devel
 ## Public disclosure
 
 Please allow reasonable time for a security issue to be investigated and fixed before publishing technical details.
+
+Experimental signature parsing never establishes trust. Vault/network/update/catalog foundations have no execution or secret-byte APIs. Windows installer publisher metadata and signed Git commits do not imply Authenticode signing. The owner-reported NSIS uninstall data-loss discrepancy remains a native acceptance blocker; see [Windows packaging](docs/WINDOWS_PACKAGING.md).

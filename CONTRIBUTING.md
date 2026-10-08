@@ -61,8 +61,9 @@ pnpm install --frozen-lockfile
 pnpm build
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo check --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
+cargo build --manifest-path src-tauri/Cargo.toml
 git diff --check
 ```
 
@@ -90,3 +91,5 @@ See [SECURITY.md](SECURITY.md) for details.
 ## License
 
 By contributing to VSA CORE, you agree that your contributions are provided under the GNU General Public License v3.0 only (GPL-3.0-only).
+
+Windows CI also compiles MSI/NSIS installers. Native acceptance remains in [Windows QA](docs/WINDOWS_QA.md); pure SDK contract scope is in [Foundation contracts](docs/FOUNDATION_CONTRACTS.md).

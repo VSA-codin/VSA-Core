@@ -16,7 +16,7 @@ export function TrustCenter() {
     setPathsError(false);
     if (showPaths) {
       setShowPaths(false);
-      setRevealed(value => value && ({ ...value, configDirectory: null, dataDirectory: null }));
+      setRevealed(null);
       return;
     }
     setPathsLoading(true);
@@ -70,6 +70,16 @@ export function TrustCenter() {
       <section className="trust-section" aria-labelledby="not-implemented-title">
         <h2 id="not-implemented-title">Not implemented</h2>
         <p>Vault, encryption, OS sandboxing, module installation and execution, automation execution, updater and log collection.</p>
+      </section>
+      <section className="trust-section" aria-labelledby="review-gates-title">
+        <h2 id="review-gates-title">Architecture review gates</h2>
+        <dl className="diagnostics">
+          <div><dt>Module catalog</dt><dd>Local preview contracts only. Installation, updates and rollback plans remain blocked.</dd></div>
+          <div><dt>Signature verification</dt><dd>Metadata parsing only. No trust roots or cryptographic verification.</dd></div>
+          <div><dt>CORE updates</dt><dd>Inert version/channel review state. No network downloads or installation.</dd></div>
+          <div><dt>Network policy</dt><dd>Default-deny dry-run contracts. No firewall backend or network mutation.</dd></div>
+          <div><dt>Windows publisher</dt><dd>Publisher metadata is not Authenticode signing. Unknown-publisher or SmartScreen warnings may appear.</dd></div>
+        </dl>
       </section>
       <section className="trust-section" aria-labelledby="limitations-title">
         <h2 id="limitations-title">Known limitations</h2>
